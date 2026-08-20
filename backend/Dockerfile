@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
-COPY server.js db.js upload.js ./
+COPY server.js db.js upload.js kommentare.js ./
 RUN mkdir -p uploads
 
 CMD ["npm", "start"]

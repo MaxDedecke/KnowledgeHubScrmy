@@ -5,7 +5,7 @@
   "description": "Backend/API des Knowledge Hubs",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/upload.test.js"
+    "test": "node --test test/upload.test.js test/kommentare.test.js"
   },
   "dependencies": {
     "express": "^4.21.2",

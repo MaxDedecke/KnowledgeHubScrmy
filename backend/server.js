@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool, initSchema } = require('./db');
 const { upload, registerFile } = require('./upload');
+const { createKommentar, listKommentare } = require('./kommentare');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -36,6 +37,52 @@ app.get('/files', async (_req, res) => {
   } catch (err) {
     console.error('Dateiliste konnte nicht geladen werden:', err);
     res.status(500).json({ error: 'Dateiliste konnte nicht geladen werden.' });
+  }
+});
+
+// POST /files/:id/kommentare – legt einen Kommentar zu einer Datei an.
+app.post('/files/:id/kommentare', async (req, res) => {
+  try {
+    const fileId = Number(req.params.id);
+    if (!Number.isInteger(fileId) || fileId <= 0) {
+      return res.status(400).json({ error: 'Ungültige Datei-ID.' });
+    }
+    const text = (req.body && req.body.text) || '';
+    if (typeof text !== 'string' || text.trim() === '') {
+      return res.status(400).json({ error: 'Kommentartext fehlt oder ist leer.' });
+    }
+
+    const file = await pool.query('SELECT id FROM files WHERE id = $1', [fileId]);
+    if (file.rowCount === 0) {
+      return res.status(404).json({ error: 'Datei nicht gefunden.' });
+    }
+
+    const kommentar = await createKommentar(pool, { fileId, text });
+    res.status(201).json(kommentar);
+  } catch (err) {
+    console.error('Kommentar konnte nicht angelegt werden:', err);
+    res.status(500).json({ error: 'Kommentar konnte nicht gespeichert werden.' });
+  }
+});
+
+// GET /files/:id/kommentare – liefert alle Kommentare der Datei.
+app.get('/files/:id/kommentare', async (req, res) => {
+  try {
+    const fileId = Number(req.params.id);
+    if (!Number.isInteger(fileId) || fileId <= 0) {
+      return res.status(400).json({ error: 'Ungültige Datei-ID.' });
+    }
+
+    const file = await pool.query('SELECT id FROM files WHERE id = $1', [fileId]);
+    if (file.rowCount === 0) {
+      return res.status(404).json({ error: 'Datei nicht gefunden.' });
+    }
+
+    const kommentare = await listKommentare(pool, fileId);
+    res.json(kommentare);
+  } catch (err) {
+    console.error('Kommentare konnten nicht geladen werden:', err);
+    res.status(500).json({ error: 'Kommentare konnten nicht geladen werden.' });
   }
 });
 
