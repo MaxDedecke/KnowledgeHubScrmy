@@ -1,5 +1,5 @@
 const express = require('express');
-const { pool, initSchema } = require('./db');
+const { pool, initSchema, waitForDatabase } = require('./db');
 const { createUploadMiddleware, registerFile, downloadFile, fetchFile } = require('./upload');
 const { createKommentar, listKommentare } = require('./kommentare');
 
@@ -118,6 +118,7 @@ app.get('/api/files/:id/kommentare', async (req, res) => {
  * Wird beim direkten Start (npm start) ausgeführt.
  */
 async function startServer() {
+  await waitForDatabase(pool);
   await initSchema();
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend läuft auf Port ${PORT}`);

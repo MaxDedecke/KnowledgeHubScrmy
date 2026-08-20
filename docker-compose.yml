@@ -8,6 +8,12 @@ services:
       POSTGRES_DB: knowledge
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   backend:
     build: ./backend
@@ -20,7 +26,8 @@ services:
       PG_DATABASE: knowledge
       PORT: "3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
