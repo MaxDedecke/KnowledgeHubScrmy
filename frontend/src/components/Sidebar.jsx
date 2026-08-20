@@ -63,7 +63,7 @@ function SidebarList({ files, selectedFileId, onSelect }) {
             >
               <DocumentIcon />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
+                <span title={file.name} className="block truncate text-sm font-semibold">
                   {file.name}
                 </span>
                 {datum && (
