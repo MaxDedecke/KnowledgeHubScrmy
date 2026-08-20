@@ -1,12 +1,15 @@
 const express = require('express');
 const { pool, initSchema } = require('./db');
-const { upload, registerFile, downloadFile, fetchFile } = require('./upload');
+const { createUploadMiddleware, registerFile, downloadFile, fetchFile } = require('./upload');
 const { createKommentar, listKommentare } = require('./kommentare');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
 app.use(express.json());
+
+// Multer-Middleware für Multipart-Uploads (Feld "file").
+const upload = createUploadMiddleware();
 
 // POST /api/files – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
 app.post('/api/files', upload.single('file'), async (req, res) => {
