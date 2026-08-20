@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool, initSchema, waitForDatabase } = require('./db');
-const { createUploadMiddleware, registerFile, downloadFile, fetchFile } = require('./upload');
+const { createUploadMiddleware, registerFile, downloadFile, fetchFile, uploadErrorHandler } = require('./upload');
 const { createKommentar, listKommentare } = require('./kommentare');
 
 const app = express();
@@ -12,7 +12,6 @@ app.use(express.json());
 const upload = createUploadMiddleware();
 
 // POST /api/files – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
-app.post('/api/files', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
@@ -112,6 +111,10 @@ app.get('/api/files/:id/kommentare', async (req, res) => {
     res.status(500).json({ error: 'Kommentare konnten nicht geladen werden.' });
   }
 });
+
+// Multer-Upload-Fehler (zu große Datei, nicht erlaubter Typ) als
+// verständliche HTTP-400-Meldung an das Frontend zurückgeben.
+app.use(uploadErrorHandler());
 
 /**
  * Startet Schema-Initialisierung und HTTP-Server.

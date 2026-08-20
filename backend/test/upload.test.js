@@ -239,3 +239,125 @@ test('parseFormData extrahiert Name und Inhalt einer multipart-Datei', async () 
   assert.strictEqual(parsed.originalName, 'notiz.txt');
   assert.strictEqual(parsed.buffer.toString('utf8'), fileContent);
 });
+
+// Baut eine minimale Express-App mit der POST-/api/files-Upload-Route auf.
+// Die Multer-Validierung und der uploadErrorHandler werden wie in server.js
+// verschaltet, damit der HTTP-Fehlerpfad real durchgetestet wird.
+function buildUploadApp(pool) {
+  const express = require('express');
+  const { createUploadMiddleware, registerFile, uploadErrorHandler } = require('../upload');
+  const app = express();
+  const upload = createUploadMiddleware();
+  app.post('/api/files', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
+      }
+      const record = await registerFile(pool, {
+        originalName: req.file.originalname,
+        storedPath: req.file.path,
+        size: req.file.size,
+      });
+      res.status(201).json(record);
+    } catch (err) {
+      console.error('Upload fehlgeschlagen:', err);
+      res.status(500).json({ error: 'Datei konnte nicht gespeichert werden.' });
+    }
+  });
+  app.use(uploadErrorHandler());
+  return app;
+}
+
+// Baut einen multipart-Body mit einer Datei auf.
+function multipartBody({ boundary, filename, mime, content }) {
+  const head = Buffer.from(
+    `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+      `Content-Type: ${mime}\r\n\r\n`
+  );
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+  return Buffer.concat([head, Buffer.from(content), tail]);
+}
+
+test('Upload mit nicht erlaubtem MIME-Typ wird mit 400 und erlaubten Typen abgelehnt', async (t) => {
+  const supported = new Set([
+    'image/png',
+    'image/jpeg',
+    'application/pdf',
+    'text/plain',
+  ]);
+  const unsupported = ['application/zip', 'application/json'].find((m) => !supported.has(m));
+
+  const app = buildUploadApp({ async query() { return { rows: [] }; } });
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const boundary = '----WebKitFormBoundaryBlocked';
+  const res = await fetch(`http://127.0.0.1:${port}/api/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+    body: multipartBody({
+      boundary,
+      filename: 'schadcode.malware',
+      mime: unsupported,
+      content: 'böser Inhalt',
+    }),
+  });
+
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  // Meldung nennt den unzulässigen Typ und mindestens einen erlaubten Typ.
+  assert.match(body.error, /nicht erlaubt/i);
+  assert.match(body.error, /image\/png|application\/pdf|image\/jpeg|text\/plain/);
+});
+
+test('Upload größer als 30 MB wird mit 400 und Größenmeldung abgelehnt', async (t) => {
+  const app = buildUploadApp({});
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const boundary = '----WebKitFormBoundaryTooLarge';
+  const res = await fetch(`http://127.0.0.1:${port}/api/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+    body: multipartBody({
+      boundary,
+      filename: 'gross.pdf',
+      mime: 'application/pdf',
+      content: 'x'.repeat(30 * 1024 * 1024 + 100),
+    }),
+  });
+
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.match(body.error, /zu groß/i);
+  assert.match(body.error, /30 MB/);
+});
+
+test('Upload mit erlaubtem Typ unterhalb der Grenze verwendet die Register-Funktion', async (t) => {
+  // Verifiziert, dass ein passender Upload den Upload-Pfad weiter durchläuft
+  // und registerFile aufgerufen wird (Datei bleibt weiterhin speicherbar).
+  let stored;
+  const pool = {
+    async query() {
+      return { rows: [{ id: 1, name: 'notiz.txt', path: stored, size: 7 }] };
+    },
+  };
+  const app = buildUploadApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const boundary = '----WebKitFormBoundaryOk';
+  const res = await fetch(`http://127.0.0.1:${port}/api/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+    body: multipartBody({
+      boundary,
+      filename: 'notiz.txt',
+      mime: 'text/plain',
+      content: 'Inhalt',
+    }),
+  });
+
+  assert.strictEqual(res.status, 201);
+});

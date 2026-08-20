@@ -124,10 +124,31 @@ function downloadFile(db) {
   };
 }
 
+// Erlaubte MIME-Typen für Uploads. Andere Dateien werden mit 400 abgewiesen.
+const ALLOWED_MIME_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'application/pdf',
+  'text/plain',
+];
+
+// Maximale Upload-Größe in Byte: 30 MB.
+const MAX_FILE_SIZE = 30 * 1024 * 1024;
+
+/**
+ * Prüft, ob ein vom Client gesendeter MIME-Typ zum Hochladen erlaubt ist.
+ */
+function isAllowedMimeType(mime) {
+  return ALLOWED_MIME_TYPES.includes(mime);
+}
+
 /**
  * Baut die Multer-Middleware für Multipart-Uploads auf.
  * Multer wird lazy geladen, damit die pure Upload-Logik ohne
  * installierte Abhängigkeiten testbar bleibt.
+ * Die Middleware prüft bereits beim Einlesen den Dateityp (fileFilter)
+ * und begrenzt die Dateigröße (fileSize), unzulässige Dateien werden also
+ * gar nicht erst vollständig auf die Platte geschrieben.
  */
 function createUploadMiddleware() {
   const multer = require('multer');
@@ -139,7 +160,41 @@ function createUploadMiddleware() {
       cb(null, buildStoredName(file.originalname));
     },
   });
-  return multer({ storage });
+  const fileFilter = (req, file, cb) => {
+    if (!isAllowedMimeType(file.mimetype)) {
+      const err = new Error(
+        `Dateityp "${file.mimetype}" ist nicht erlaubt. Erlaubt sind: ${ALLOWED_MIME_TYPES.join(', ')}.`
+      );
+      err.isUploadValidation = true;
+      return cb(err);
+    }
+    cb(null, true);
+  };
+  return multer({
+    storage,
+    limits: { fileSize: MAX_FILE_SIZE },
+    fileFilter,
+  });
+}
+
+/**
+ * Express-Fehler-Middleware für Uploads. Übersetzt die von Multer bzw. der
+ * Validierung erzeugten Fehler in verständliche HTTP-400-Meldungen, die das
+ * Frontend direkt anzeigen kann. Nicht-Upload-Fehler reicht sie an die
+ * allgemeine Express-Fehlerbehandlung weiter.
+ */
+function uploadErrorHandler() {
+  return function uploadValidationError(err, _req, res, next) {
+    if (err && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: `Datei ist zu groß. Maximale Größe ist 30 MB.`,
+      });
+    }
+    if (err && err.isUploadValidation) {
+      return res.status(400).json({ error: err.message });
+    }
+    return next(err);
+  };
 }
 
 module.exports = {
@@ -153,4 +208,8 @@ module.exports = {
   contentTypeFor,
   downloadFile,
   fetchFile,
+  isAllowedMimeType,
+  uploadErrorHandler,
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE,
 };
