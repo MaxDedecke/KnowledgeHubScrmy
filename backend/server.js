@@ -1,0 +1,61 @@
+const express = require('express');
+const { pool, initSchema } = require('./db');
+const { upload, registerFile } = require('./upload');
+
+const app = express();
+const PORT = Number(process.env.PORT || 3000);
+
+app.use(express.json());
+
+// POST /upload – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
+    }
+    const infos = {
+      originalName: req.file.originalname,
+      storedPath: req.file.path,
+      size: req.file.size,
+    };
+    const record = await registerFile(pool, infos);
+    res.status(201).json(record);
+  } catch (err) {
+    console.error('Upload fehlgeschlagen:', err);
+    res.status(500).json({ error: 'Datei konnte nicht gespeichert werden.' });
+  }
+});
+
+// GET /files – liefert die Liste aller gespeicherten Dateien (neueste zuerst).
+app.get('/files', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, size, created_at FROM files ORDER BY created_at DESC, id DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Dateiliste konnte nicht geladen werden:', err);
+    res.status(500).json({ error: 'Dateiliste konnte nicht geladen werden.' });
+  }
+});
+
+/**
+ * Startet Schema-Initialisierung und HTTP-Server.
+ * Wird beim direkten Start (npm start) ausgeführt.
+ */
+async function startServer() {
+  await initSchema();
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Backend läuft auf Port ${PORT}`);
+  });
+  return server;
+}
+
+module.exports = { app, pool, startServer, PORT };
+
+if (require.main === module) {
+  startServer().catch((err) => {
+    console.error('Start fehlgeschlagen:', err);
+    process.exit(1);
+  });
+}

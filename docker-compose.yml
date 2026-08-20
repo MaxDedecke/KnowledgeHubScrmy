@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    container_name: knowledge-hub-db
+    environment:
+      POSTGRES_USER: knowledge
+      POSTGRES_PASSWORD: knowledge
+      POSTGRES_DB: knowledge
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: knowledge-hub-backend
+    environment:
+      PG_HOST: db
+      PG_PORT: "5432"
+      PG_USER: knowledge
+      PG_PASSWORD: knowledge
+      PG_DATABASE: knowledge
+      PORT: "3000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: knowledge-hub-frontend
+    environment:
+      PORT: "8081"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:

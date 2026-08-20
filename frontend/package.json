@@ -1,0 +1,16 @@
+{
+  "name": "knowledge-hub-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "build": "echo \"Frontend-Build folgt in einem späteren Ticket\"",
+    "test": "echo \"Frontend-Tests folgen in einem späteren Ticket\"",
+    "lint": "echo \"Lint folgt in einem späteren Ticket\""
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
