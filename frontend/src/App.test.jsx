@@ -159,7 +159,7 @@ describe("FileList", () => {
     ).toBeTruthy();
   });
 
-  it("rendert die Dateien als Cards mit Größe und Datum", () => {
+  it("rendert die Dateien als Cards mit Größe und Datum und Download-Button", () => {
     render(
       <FileList
         status="success"
@@ -169,6 +169,30 @@ describe("FileList", () => {
 
     expect(screen.getByText("bericht.pdf")).toBeTruthy();
     expect(screen.getByText(/1,5 kB/)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "bericht.pdf herunterladen" })
+    ).toBeTruthy();
+  });
+
+  it("zeigt beim fehlgeschlagenen Download eine Alert-Fehlermeldung", async () => {
+    vi.spyOn(api, "downloadFile").mockRejectedValue(new Error("Datei weg"));
+    render(
+      <FileList
+        status="success"
+        files={[{ id: 9, name: "kaputt.pdf", size: 512, created_at: "2026-08-20T10:00:00Z" }]}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "kaputt.pdf herunterladen" })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeTruthy();
+    });
+    expect(
+      screen.getByText(/„kaputt.pdf" konnte nicht heruntergeladen werden/)
+    ).toBeTruthy();
   });
 });
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { downloadFile } from "../api.js";
 import { Button } from "./ui/button.jsx";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx";
 import {
   Card,
   CardContent,
@@ -192,26 +193,25 @@ function FileCards({ files, onSelect }) {
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <Card role="alert" className="border-destructive/40 bg-card">
-          <CardContent className="flex items-start gap-3 p-4 text-sm text-destructive">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mt-0.5 h-5 w-5 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <span>{errorMessage}</span>
-          </CardContent>
-        </Card>
+        <Alert variant="destructive" className="bg-destructive/5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <AlertTitle>Download fehlgeschlagen</AlertTitle>
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
       )}
       <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {files.map((file) => {
@@ -251,22 +251,41 @@ function FileCards({ files, onSelect }) {
                       disabled={downloading}
                       aria-label={`${file.name} herunterladen`}
                       title="Datei herunterladen"
+                      className="h-11 w-11"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
+                      {downloading ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 animate-spin"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 12a9 9 0 11-6.219-8.56"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      )}
                     </Button>
                     <div
                       className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"
