@@ -1,0 +1,3 @@
+# Design-Rückblick auf Sprint 3
+
+Die Einzelteile fügen sich mittlerweile gut in die Design-Skala ein: Lade-, Leer- und Fehlerzustände kommen in beiden Listen optisch einheitlich an, und die Icons sowie Rundungswerte entsprechen der Konvention. Beim Zusammenspiel fällt aber der Future-Rhy-Eh aus: Die Dateiliste sitzt im breiten Container, die Detailansicht mit Kommentarliste wirkt dagegen sehr schmal und springt beim Navigieren im Layout. Dazu sind die Touch-Zielgrößen nicht überall synchron – der „Zurück“-Button erfüllt die 44-PX-Mindestgröße, während die Formular- und Upload-Buttons im selben Blick diese Grenze prüfen sollten. Der nächste Sprint sollte diese querschnittlichen Punkte zuerst bereinigen, bevor neue Bausteine hinzukommen.
