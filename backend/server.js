@@ -12,7 +12,7 @@ app.use(express.json());
 const upload = createUploadMiddleware();
 
 // POST /api/files – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
-app.post('/api/files', async (req, res) => {
+app.post('/api/files', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
