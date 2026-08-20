@@ -5,12 +5,13 @@ const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || "http://backend:3000"
 
 /**
  * Lädt die Liste aller hochgeladenen Dateien vom Backend (GET /api/files).
- * Wirft bei Netzwerk- oder HTTP-Fehlern, damit die Oberfläche den
+ * Liefert pro Datei ID, Name und Upload-Zeitpunkt (created_at). Wirft bei
+ * Netzwerk- oder HTTP-Fehlern (rejected Promise), damit die Oberfläche den
  * Fehlerzustand anzeigen kann.
  *
  * @returns {Promise<Array<{id: number, name: string, size: number, created_at: string}>>}
  */
-export async function fetchFiles() {
+export async function getFiles() {
   const response = await fetch(`${API_BASE_URL}/api/files`);
   if (!response.ok) {
     throw new Error(
@@ -73,7 +74,7 @@ export async function downloadFile(fileId) {
 /**
  * Lädt eine Datei als Multipart-Upload zum Backend hoch (POST /api/files,
  * Backend-Pfad /upload). Liefert den gespeicherten Metadatensatz im selben
- * Format wie fetchFiles zurück, damit die Dateiliste ohne erneutes Laden
+ * Format wie getFiles zurück, damit die Dateiliste ohne erneutes Laden
  * aktualisiert werden kann.
  *
  * @param {File} file Datei aus der Dateiauswahl des Browsers.

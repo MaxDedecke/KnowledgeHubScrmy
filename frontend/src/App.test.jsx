@@ -36,7 +36,7 @@ function fileMeta(overrides = {}) {
  * Funktion); ohne Angabe gelingt ein Standard-Upload.
  */
 async function renderUploadTest({ upload } = {}) {
-  vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
+  vi.spyOn(api, "getFiles").mockResolvedValue([]);
   const uploadMock =
     upload === undefined
       ? vi.spyOn(api, "uploadFile").mockResolvedValue(fileMeta())
@@ -74,13 +74,13 @@ describe("App", () => {
   });
 
   it("zeigt beim initialen Laden einen Ladezustand", () => {
-    vi.spyOn(api, "fetchFiles").mockReturnValue(new Promise(() => {}));
+    vi.spyOn(api, "getFiles").mockReturnValue(new Promise(() => {}));
     render(<App />);
     expect(screen.getByText("Wird geladen …")).toBeTruthy();
   });
 
   it("zeigt bei leerer Dateiliste den leeren Zustand", async () => {
-    vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
     render(<App />);
 
     await waitFor(() => {
@@ -88,12 +88,12 @@ describe("App", () => {
         screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
       ).toBeTruthy();
     });
-    expect(api.fetchFiles).toHaveBeenCalledTimes(1);
+    expect(api.getFiles).toHaveBeenCalledTimes(1);
   });
 
   it("zeigt bei Ladefehler einen Fehlerzustand und lädt über Retry erneut", async () => {
     const fetchMock = vi
-      .spyOn(api, "fetchFiles")
+      .spyOn(api, "getFiles")
       .mockRejectedValueOnce(new Error("Netzwerkfehler"))
       .mockResolvedValueOnce([
         { id: 7, name: "retry.txt", size: 100, created_at: "2026-08-20T10:00:00Z" },
@@ -114,7 +114,7 @@ describe("App", () => {
   });
 
   it("zeigt nach erfolgreichem Laden die Dateien als Liste an", async () => {
-    vi.spyOn(api, "fetchFiles").mockResolvedValue([
+    vi.spyOn(api, "getFiles").mockResolvedValue([
       { id: 1, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },
       { id: 2, name: "notizen.txt", size: 100, created_at: "2026-08-19T09:30:00Z" },
     ]);
@@ -146,7 +146,7 @@ describe("App", () => {
     });
     expect(uploadMock).toHaveBeenCalledWith(file);
     // Kein erneutes Laden der kompletten Liste – Upload-Ergebnis aktualisiert direkt.
-    expect(api.fetchFiles).toHaveBeenCalledTimes(1);
+    expect(api.getFiles).toHaveBeenCalledTimes(1);
     expect(
       screen.queryByRole("heading", { name: "Noch keine Dateien vorhanden" })
     ).toBeNull();

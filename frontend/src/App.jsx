@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFiles, uploadFile } from "./api.js";
+import { getFiles, uploadFile } from "./api.js";
 import AppShell from "./components/AppShell.jsx";
 import FileDetail from "./components/FileDetail.jsx";
 import FileList from "./components/FileList.jsx";
@@ -44,7 +44,7 @@ function App() {
     setIsError(false);
     setHasInitialLoaded(false);
     try {
-      const data = await fetchFiles();
+      const data = await getFiles();
       setFiles(Array.isArray(data) ? data : []);
     } catch {
       setFiles([]);
