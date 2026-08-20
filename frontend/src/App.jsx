@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFiles, uploadFile } from "./api.js";
+import { fetchFiles, fetchKommentare, uploadFile } from "./api.js";
 import FileList from "./components/FileList.jsx";
+import KommentarFormular from "./components/KommentarFormular.jsx";
+import KommentarListe, { KOMMENTAR_STATUS } from "./components/KommentarListe.jsx";
 import { Button } from "./components/ui/button.jsx";
 import {
   Card,
@@ -33,6 +35,10 @@ function App() {
   const [selectedFileName, setSelectedFileName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [kommentare, setKommentare] = useState([]);
+  const [kommentarError, setKommentarError] = useState(false);
+  const [hasKommentareLoaded, setHasKommentareLoaded] = useState(false);
   const fileInputRef = useRef(null);
 
   const loadFiles = useCallback(async () => {
@@ -53,8 +59,34 @@ function App() {
     loadFiles();
   }, [loadFiles]);
 
+  const loadKommentare = useCallback(async (file) => {
+    setSelectedFile(file);
+    setKommentare([]);
+    setKommentarError(false);
+    setHasKommentareLoaded(false);
+    try {
+      const data = await fetchKommentare(file.id);
+      setKommentare(Array.isArray(data) ? data : []);
+    } catch {
+      setKommentare([]);
+      setKommentarError(true);
+    } finally {
+      setHasKommentareLoaded(true);
+    }
+  }, []);
+
   const handleSelectFile = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleFileClick = (file) => {
+    loadKommentare(file);
+  };
+
+  const handleKommentarSaved = (kommentar) => {
+    // Neuen Kommentar ohne Seiten-Reload direkt in die Liste aufnehmen
+    // (Backend liefert älteste zuerst; POST hängt chronologisch an).
+    setKommentare((current) => [...current, kommentar]);
   };
 
   const handleFileSelection = async (event) => {
@@ -105,7 +137,6 @@ function App() {
             <CardTitle>Willkommen im Knowledge Hub</CardTitle>
             <CardDescription>
               Hier können Sie Dateien hochladen und mit Kommentaren anreichern.
-              Die Kommentarfunktion folgt in einem der nächsten Schritte.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -143,8 +174,47 @@ function App() {
         </Card>
 
         <section aria-label="Dateiliste">
-          <FileList status={status} files={files} onRetry={loadFiles} />
+          <FileList
+            status={status}
+            files={files}
+            onRetry={loadFiles}
+            onSelect={handleFileClick}
+          />
         </section>
+
+        {selectedFile && (
+          <section aria-label={`Kommentare zu ${selectedFile.name}`}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Kommentare</CardTitle>
+                <CardDescription className="truncate">
+                  zu {selectedFile.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <KommentarFormular
+                  fileId={selectedFile.id}
+                  onSaved={handleKommentarSaved}
+                />
+                <div aria-live="polite">
+                  <KommentarListe
+                    status={
+                      kommentarError
+                        ? KOMMENTAR_STATUS.error
+                        : !hasKommentareLoaded
+                          ? KOMMENTAR_STATUS.loading
+                          : kommentare.length === 0
+                            ? KOMMENTAR_STATUS.empty
+                            : KOMMENTAR_STATUS.success
+                    }
+                    kommentare={kommentare}
+                    onRetry={() => loadKommentare(selectedFile)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
       </main>
     </div>
   );

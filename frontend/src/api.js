@@ -41,3 +41,44 @@ export async function uploadFile(file) {
   }
   return response.json();
 }
+
+/**
+ * Lädt alle Kommentare einer Datei (GET /api/files/:id/kommentare).
+ * Wirft bei Netzwerk- oder HTTP-Fehlern, damit die Oberfläche den
+ * Fehlerzustand anzeigen kann.
+ *
+ * @param {number} fileId ID der Datei.
+ * @returns {Promise<Array<{id: number, file_id: number, text: string, created_at: string}>>}
+ */
+export async function fetchKommentare(fileId) {
+  const response = await fetch(`${API_BASE_URL}/api/files/${fileId}/kommentare`);
+  if (!response.ok) {
+    throw new Error(
+      `Kommentare konnten nicht geladen werden (HTTP ${response.status})`
+    );
+  }
+  return response.json();
+}
+
+/**
+ * Speichert einen neuen Kommentar zu einer Datei (POST /api/files/:id/kommentare).
+ * Liefert den gespeicherten Kommentar zurück, damit die Kommentarliste ohne
+ * erneutes Laden aktualisiert werden kann.
+ *
+ * @param {number} fileId ID der Datei.
+ * @param {string} text Kommentartext.
+ * @returns {Promise<{id: number, file_id: number, text: string, created_at: string}>}
+ */
+export async function createKommentar(fileId, text) {
+  const response = await fetch(`${API_BASE_URL}/api/files/${fileId}/kommentare`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Kommentar konnte nicht gespeichert werden (HTTP ${response.status})`
+    );
+  }
+  return response.json();
+}

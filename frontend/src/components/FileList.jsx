@@ -167,7 +167,7 @@ function ErrorList({ onRetry }) {
 /**
  * Erfolgszustand: Cards je Datei mit Name, Größe und Upload-Zeitpunkt.
  */
-function FileCards({ files }) {
+function FileCards({ files, onSelect }) {
   return (
     <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {files.map((file) => {
@@ -180,12 +180,17 @@ function FileCards({ files }) {
             <Card className="h-full">
               <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <CardTitle
-                    className="truncate text-lg text-card-foreground"
-                    title={file.name}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => onSelect?.(file)}
+                    aria-label={`Kommentare für ${file.name} anzeigen`}
+                    className="h-auto rounded-md p-0 text-left font-semibold text-card-foreground hover:bg-transparent hover:text-primary"
                   >
-                    {file.name}
-                  </CardTitle>
+                    <span className="truncate" title={file.name}>
+                      {file.name}
+                    </span>
+                  </Button>
                   {meta.length > 0 && (
                     <CardDescription className="mt-1">
                       {meta.join(" · ")}
@@ -225,7 +230,7 @@ function FileCards({ files }) {
  * `status` darf nur Werte aus LIST_STATUS (loading, empty, error, success)
  * tragen; siehe App.jsx.
  */
-export default function FileList({ status, files = [], onRetry }) {
+export default function FileList({ status, files = [], onRetry, onSelect }) {
   if (status === "loading") {
     return <LoadingList />;
   }
@@ -235,5 +240,5 @@ export default function FileList({ status, files = [], onRetry }) {
   if (status === "empty" || files.length === 0) {
     return <EmptyList />;
   }
-  return <FileCards files={files} />;
+  return <FileCards files={files} onSelect={onSelect} />;
 }
