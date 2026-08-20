@@ -78,7 +78,7 @@ function EmptyList() {
     <Card className="p-6">
       <CardContent className="flex flex-col items-center pt-6 text-center">
         <div
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-muted"
+          className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted"
           aria-hidden="true"
         >
           <svg
