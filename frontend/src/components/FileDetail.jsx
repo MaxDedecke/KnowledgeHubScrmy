@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchFile, fetchKommentare } from "../api.js";
+import { downloadFile, fetchFile, fetchKommentare } from "../api.js";
 import { formatBytes, formatDate } from "./FileList.jsx";
 import KommentarFormular from "./KommentarFormular.jsx";
 import KommentarListe, { KOMMENTAR_STATUS } from "./KommentarListe.jsx";
@@ -88,6 +88,8 @@ export default function FileDetail({ fileId, onBack }) {
   const [kommentare, setKommentare] = useState([]);
   const [kommentarError, setKommentarError] = useState(false);
   const [hasKommentareLoaded, setHasKommentareLoaded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
 
   const loadFile = useCallback(async () => {
     setDetailStatus(DETAIL_STATUS.loading);
@@ -116,6 +118,21 @@ export default function FileDetail({ fileId, onBack }) {
   useEffect(() => {
     loadFile();
   }, [loadFile]);
+
+  const handleDownload = async () => {
+    if (!file || isDownloading) {
+      return;
+    }
+    setDownloadError(false);
+    setIsDownloading(true);
+    try {
+      await downloadFile(file.id);
+    } catch {
+      setDownloadError(true);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleKommentarSaved = (kommentar) => {
     // Neuen Kommentar ohne Seiten-Reload direkt in die Liste aufnehmen
@@ -179,6 +196,78 @@ export default function FileDetail({ fileId, onBack }) {
               </CardTitle>
               {meta.length > 0 && <CardDescription>{meta.join(" · ")}</CardDescription>}
             </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              {downloadError && (
+                <Alert variant="destructive" className="w-full bg-destructive/5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <AlertTitle>Download fehlgeschlagen</AlertTitle>
+                  <AlertDescription>
+                    „{file.name}" konnte nicht heruntergeladen werden. Die Datei
+                    ist möglicherweise nicht mehr vorhanden.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                aria-label={`${file.name} herunterladen`}
+                title="Datei herunterladen"
+                className="min-h-11 min-w-11 gap-2 rounded-md"
+              >
+                {isDownloading ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 12a9 9 0 11-6.219-8.56"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                )}
+                <span className="truncate" title="Datei herunterladen">
+                  {file.name}
+                </span>
+              </Button>
+            </CardContent>
           </Card>
 
           <Card>
