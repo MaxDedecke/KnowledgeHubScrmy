@@ -142,7 +142,7 @@ export default function FileDetail({ fileId, onBack }) {
           type="button"
           variant="ghost"
           onClick={onBack}
-          className="h-auto gap-2 rounded-md p-0 text-muted-foreground hover:bg-transparent hover:text-primary"
+          className="min-h-11 min-w-11 gap-2 rounded-md px-3 text-muted-foreground hover:bg-transparent hover:text-primary"
           aria-label="Zurück zur Dateiliste"
         >
           <svg
