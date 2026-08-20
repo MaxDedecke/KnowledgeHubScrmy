@@ -1,0 +1,3 @@
+# Design-Rückblick auf Sprint 11
+
+Die Anwendung ist im Gesamtbild weitgehend stimmig: Sidebar, Dateiliste und Detailansicht teilen sich die gleichen Grundmuster für Lade-, Leer- und Fehlerzustände sowie die gewohnte Farb- und Typografieskala. Als uneinheitlich fällt allerdings die Behandlung langer Dateinamen auf: In Sidebar und Dateiliste wird sie mit Ellipsis gekürzt, in der Detailansicht zusätzlich um einen Tooltip erweitert – jeweils offenbar mit leicht unterschiedlichem Code an jeder Stelle. Auch der Hinweistext im Upload-Bereich wirkt wie ein eigener Mini-Stil neben der übrigen Alert/Description-Konvention. Der nächste Sprint sollte diese zwei wiederkehrenden Details zentral fassen, statt sie an jeder Anzeige neu zu implementieren.
