@@ -361,3 +361,113 @@ test('Upload mit erlaubtem Typ unterhalb der Grenze verwendet die Register-Funkt
 
   assert.strictEqual(res.status, 201);
 });
+
+// Zustandsbehafteter In-Memory-Pool für den kompletten Upload-Nachweis:
+// registriert Uploads wie die echte DB und liefert sie für Dateiliste
+// und Download wieder aus.
+function memoryPool() {
+  const rows = [];
+  let nextId = 1;
+  return {
+    _rows: rows,
+    async query(sql, params) {
+      if (sql.includes('INSERT INTO files')) {
+        const row = {
+          id: nextId++,
+          name: params[0],
+          path: params[1],
+          size: params[2],
+          created_at: new Date().toISOString(),
+        };
+        rows.push(row);
+        return { rows: [row], rowCount: 1 };
+      }
+      if (sql.includes('FROM files')) {
+        // WHERE id = $1 auswerten, falls ein Parameter übergeben wird
+        const list = params && params.length
+          ? rows.filter((r) => r.id === params[0])
+          : rows;
+        return { rows: list, rowCount: list.length };
+      }
+      throw new Error('Unbekannte SQL-Abfrage: ' + sql);
+    },
+  };
+}
+
+// Baut eine Express-App mit Upload-, Dateilisten- und Download-Route auf,
+// verschaltet wie server.js – für den echten Upload-↔-Dateiliste-Nachweis.
+function buildIntegrationApp(pool) {
+  const express = require('express');
+  const { createUploadMiddleware, registerFile, downloadFile, uploadErrorHandler } = require('../upload');
+  const app = express();
+  const upload = createUploadMiddleware();
+  app.post('/api/files', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
+      }
+      const record = await registerFile(pool, {
+        originalName: req.file.originalname,
+        storedPath: req.file.path,
+        size: req.file.size,
+      });
+      res.status(201).json(record);
+    } catch (err) {
+      console.error('Upload fehlgeschlagen:', err);
+      res.status(500).json({ error: 'Datei konnte nicht gespeichert werden.' });
+    }
+  });
+  app.get('/api/files', async (_req, res) => {
+    try {
+      const result = await pool.query(
+        'SELECT id, name, size, created_at FROM files ORDER BY created_at DESC, id DESC'
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error('Dateiliste konnte nicht geladen werden:', err);
+      res.status(500).json({ error: 'Dateiliste konnte nicht geladen werden.' });
+    }
+  });
+  app.get('/api/files/:id/download', downloadFile(pool));
+  app.use(uploadErrorHandler());
+  return app;
+}
+
+test('Integration: text/plain-Upload erscheint in der Dateiliste und ist per Download abrufbar', async (t) => {
+  // Vollständiger Upload-Nachweis über die echte API: Datei hochladen,
+  // in GET /api/files wiederfinden und über den Download-Endpunkt abrufen.
+  const pool = memoryPool();
+  const app = buildIntegrationApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const boundary = '----WebKitFormBoundaryIntegration';
+  const content = 'Inhalt des Integrationstests';
+  const uploadRes = await fetch(`http://127.0.0.1:${port}/api/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+    body: multipartBody({
+      boundary,
+      filename: 'notiz.txt',
+      mime: 'text/plain',
+      content,
+    }),
+  });
+  assert.strictEqual(uploadRes.status, 201);
+  const uploaded = await uploadRes.json();
+  assert.ok(uploaded.id, 'Upload muss die Datei-ID zurückliefern');
+
+  // Die hochgeladene Datei taucht in der Dateiliste auf.
+  const listRes = await fetch(`http://127.0.0.1:${port}/api/files`);
+  assert.strictEqual(listRes.status, 200);
+  const list = await listRes.json();
+  const found = list.find((f) => f.id === uploaded.id);
+  assert.ok(found, 'Hochgeladene Datei muss in GET /api/files enthalten sein');
+  assert.strictEqual(found.name, 'notiz.txt');
+
+  // Die gleiche Datei lässt sich über den Download-Endpunkt abrufen.
+  const downloadRes = await fetch(`http://127.0.0.1:${port}/api/files/${uploaded.id}/download`);
+  assert.strictEqual(downloadRes.status, 200);
+  assert.strictEqual(downloadRes.headers.get('content-type'), 'text/plain');
+  assert.strictEqual(await downloadRes.text(), content);
+});
