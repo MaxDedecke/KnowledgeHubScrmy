@@ -17,6 +17,42 @@ afterEach(() => {
   cleanup();
 });
 
+/** Metadaten einer hochgeladenen Datei im API-Vertrag. */
+function fileMeta(overrides = {}) {
+  return {
+    id: 99,
+    name: "hochgeladen.txt",
+    size: 100,
+    created_at: "2026-08-20T12:00:00Z",
+    ...overrides,
+  };
+}
+
+/**
+ * Gemeinsamer Assistent für Upload-Tests: mockt die Dateiliste leer, rendert
+ * die App und wartet, bis der leere Zustand sichtbar ist. Danach liefert er
+ * das versteckte <input type="file"> zurück, über das Tests den Upload
+ * auslösen. `upload` bestimmt, wie sich api.uploadFile verhält (Promise oder
+ * Funktion); ohne Angabe gelingt ein Standard-Upload.
+ */
+async function renderUploadTest({ upload } = {}) {
+  vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
+  const uploadMock =
+    upload === undefined
+      ? vi.spyOn(api, "uploadFile").mockResolvedValue(fileMeta())
+      : vi.spyOn(api, "uploadFile").mockImplementation(upload);
+  const { container } = render(<App />);
+
+  await waitFor(() => {
+    expect(
+      screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
+    ).toBeTruthy();
+  });
+
+  const fileInput = container.querySelector('input[type="file"]');
+  return { fileInput, uploadMock };
+}
+
 describe("App", () => {
   it("rendert die responsive Grundfläche mit Titel", () => {
     render(<App />);
@@ -93,22 +129,15 @@ describe("App", () => {
   });
 
   it("zeigt einen neu hochgeladenen Upload unmittelbar in der Liste", async () => {
-    vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
-    const uploadMock = vi.spyOn(api, "uploadFile").mockResolvedValue({
-      id: 3,
-      name: "frisch.pdf",
-      size: 500,
-      created_at: "2026-08-20T11:00:00Z",
-    });
-    const { container } = render(<App />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
-      ).toBeTruthy();
-    });
-
-    const fileInput = container.querySelector('input[type="file"]');
+    const uploadMock = vi.fn().mockResolvedValue(
+      fileMeta({
+        id: 3,
+        name: "frisch.pdf",
+        size: 500,
+        created_at: "2026-08-20T11:00:00Z",
+      })
+    );
+    const { fileInput } = await renderUploadTest({ upload: uploadMock });
     const file = new File(["Inhalt"], "frisch.pdf", { type: "application/pdf" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -123,27 +152,73 @@ describe("App", () => {
     ).toBeNull();
   });
 
-  it("zeigt eine Fehlermeldung, wenn der Upload fehlschlägt", async () => {
-    vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
-    vi.spyOn(api, "uploadFile").mockRejectedValue(new Error("Upload kaputt"));
-    const { container } = render(<App />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
-      ).toBeTruthy();
+  it("zeigt bei fehlgeschlagenem Upload das Alert-Muster mit Fehlermeldung", async () => {
+    const { fileInput } = await renderUploadTest({
+      upload: () => Promise.reject(new Error("Upload kaputt")),
     });
 
-    const fileInput = container.querySelector('input[type="file"]');
     fireEvent.change(fileInput, {
       target: { files: [new File(["x"], "kaputt.txt")] },
     });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Datei konnte nicht hochgeladen werden/)
-      ).toBeTruthy();
+      expect(screen.getByRole("alert")).toBeTruthy();
     });
+    expect(screen.getByText("Upload fehlgeschlagen")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      )
+    ).toBeTruthy();
+  });
+
+  it("zeigt während des Uploads einen Spinner im Button und deaktiviert diesen", async () => {
+    let finishUpload;
+    const pendingUpload = new Promise((resolve) => {
+      finishUpload = resolve;
+    });
+    const { fileInput } = await renderUploadTest({
+      upload: () => pendingUpload,
+    });
+
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["x"], "laufend.txt")] },
+    });
+
+    // Solange der Upload läuft: deaktivierter Button mit Spinner als
+    // Overlay – Mindest-Klickziele bleiben erhalten.
+    await waitFor(() => {
+      const button = screen.getByRole("button", { name: /Wird hochgeladen/ });
+      expect(button.disabled).toBe(true);
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("min-w-11");
+      expect(button.querySelector("svg.animate-spin")).toBeTruthy();
+    });
+
+    finishUpload(fileMeta({ id: 5, name: "laufend.txt" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /Wird hochgeladen/ })
+      ).toBeNull();
+    });
+    expect(screen.getByText("laufend.txt")).toBeTruthy();
+  });
+
+  it("zeigt nach erfolgreichem Upload einen kurzen Erfolgs-Hinweis", async () => {
+    const { fileInput } = await renderUploadTest({
+      upload: () => Promise.resolve(fileMeta({ id: 7, name: "erfolg.txt" })),
+    });
+
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["x"], "erfolg.txt")] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Upload erfolgreich")).toBeTruthy();
+    });
+    expect(screen.getByText("Datei erfolgreich hochgeladen.")).toBeTruthy();
+    expect(screen.getByRole("alert")).toBeTruthy();
   });
 });
 
