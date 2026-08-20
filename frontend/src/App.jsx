@@ -3,6 +3,7 @@ import { getFiles, uploadFile } from "./api.js";
 import AppShell from "./components/AppShell.jsx";
 import FileDetail from "./components/FileDetail.jsx";
 import FileList from "./components/FileList.jsx";
+import Sidebar, { SIDEBAR_STATUS } from "./components/Sidebar.jsx";
 import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert.jsx";
 import { Button } from "./components/ui/button.jsx";
 import {
@@ -63,6 +64,8 @@ function App() {
   };
 
   const handleFileClick = (file) => {
+    // Klick-Handler der Sidebar (und der Dateiliste): setzt selectedFileId,
+    // wodurch die Hauptansicht die Detailansicht dieser Datei öffnet.
     setSelectedFileId(file.id);
   };
 
@@ -101,7 +104,17 @@ function App() {
   const status = deriveListStatus(files, hasInitialLoaded, isError);
 
   return (
-    <AppShell>
+    <AppShell
+      sidebar={
+        <Sidebar
+          files={files}
+          status={status === LIST_STATUS.success ? SIDEBAR_STATUS.success : status}
+          selectedFileId={selectedFileId}
+          onSelect={handleFileClick}
+          onRetry={loadFiles}
+        />
+      }
+    >
       <Card>
         <CardHeader>
           <CardTitle>Willkommen im Knowledge Hub</CardTitle>

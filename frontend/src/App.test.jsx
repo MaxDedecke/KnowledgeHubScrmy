@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import App from "./App.jsx";
 import FileList, { formatBytes } from "./components/FileList.jsx";
@@ -100,15 +101,22 @@ describe("App", () => {
       ]);
     render(<App />);
 
+    // Fehlerzustand erscheint in Sidebar und Hauptbereich (Dateiliste);
+    // hier wird der Retry der Hauptansicht geprüft.
+    const dateiliste = await screen.findByRole("region", {
+      name: "Dateiliste",
+    });
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeTruthy();
+      expect(within(dateiliste).getByRole("alert")).toBeTruthy();
     });
     expect(screen.queryByText("retry.txt")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Erneut versuchen" }));
+    fireEvent.click(
+      within(dateiliste).getByRole("button", { name: "Erneut versuchen" })
+    );
 
     await waitFor(() => {
-      expect(screen.getByText("retry.txt")).toBeTruthy();
+      expect(screen.getAllByText("retry.txt").length).toBeGreaterThan(0);
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -121,8 +129,8 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("vertrag.pdf")).toBeTruthy();
-      expect(screen.getByText("notizen.txt")).toBeTruthy();
+      expect(screen.getAllByText("vertrag.pdf").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("notizen.txt").length).toBeGreaterThan(0);
     });
     expect(screen.queryByText("Wird geladen …")).toBeNull();
     expect(screen.queryByText("Noch keine Dateien vorhanden")).toBeNull();
@@ -142,7 +150,7 @@ describe("App", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText("frisch.pdf")).toBeTruthy();
+      expect(screen.getAllByText("frisch.pdf").length).toBeGreaterThan(0);
     });
     expect(uploadMock).toHaveBeenCalledWith(file);
     // Kein erneutes Laden der kompletten Liste – Upload-Ergebnis aktualisiert direkt.
@@ -202,7 +210,7 @@ describe("App", () => {
         screen.queryByRole("button", { name: /Wird hochgeladen/ })
       ).toBeNull();
     });
-    expect(screen.getByText("laufend.txt")).toBeTruthy();
+    expect(screen.getAllByText("laufend.txt").length).toBeGreaterThan(0);
   });
 
   it("zeigt nach erfolgreichem Upload einen kurzen Erfolgs-Hinweis", async () => {
@@ -219,6 +227,62 @@ describe("App", () => {
     });
     expect(screen.getByText("Datei erfolgreich hochgeladen.")).toBeTruthy();
     expect(screen.getByRole("alert")).toBeTruthy();
+  });
+
+  it("öffnet per Klick in der Sidebar die Detailansicht der Datei und zeigt die Auswahl in der Sidebar hervor", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([
+      { id: 1, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },
+    ]);
+    vi.spyOn(api, "fetchFile").mockResolvedValue({
+      id: 1,
+      name: "vertrag.pdf",
+      mime_type: "application/pdf",
+      size: 2048,
+      uploaded_at: "2026-08-20T10:00:00Z",
+    });
+    vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);
+
+    render(<App />);
+
+    // Schritte 1–2: Dateien geladen, Startansicht (Upload + Dateiliste) sichtbar,
+    // Klick-Handler existiert in der Sidebar (aria-label je Datei).
+    const sidebar = await screen.findByRole("complementary", {
+      name: "Seitenleiste",
+    });
+    await waitFor(() => {
+      expect(
+        within(sidebar).getByRole("button", {
+          name: "Kommentare für vertrag.pdf anzeigen",
+        })
+      ).toBeTruthy();
+    });
+    expect(screen.getByText("Willkommen im Knowledge Hub")).toBeTruthy();
+    // Noch keine Datei ausgewählt: nur Dateiliste, keine Detailansicht.
+    expect(screen.queryByText("Zurück zur Dateiliste")).toBeNull();
+
+    fireEvent.click(
+      within(sidebar).getByRole("button", {
+        name: "Kommentare für vertrag.pdf anzeigen",
+      })
+    );
+
+    // Schritt 3: Hauptansicht wechselt zur Detailansicht der gewählten Datei.
+    await waitFor(() => {
+      expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+      expect(
+        screen.getByRole("heading", { name: "Kommentare" })
+      ).toBeTruthy();
+    });
+
+    // Die ausgewählte Datei ist in der Sidebar farblich hervorgehoben
+    // (shadcn-Akzentfläche, vgl. Design-Konzept „ausgewählte Zeilen").
+    const selectedButton = within(sidebar).getByRole("button", {
+      name: "Kommentare für vertrag.pdf anzeigen",
+    });
+    expect(selectedButton.className).toContain("bg-accent");
+
+    // Dateiname erscheint in Sidebar und Detailansicht.
+    expect(screen.getAllByText("vertrag.pdf").length).toBeGreaterThanOrEqual(2);
   });
 });
 

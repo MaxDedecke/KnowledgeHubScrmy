@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import App from "../App.jsx";
 import KommentarFormular from "./KommentarFormular.jsx";
@@ -37,8 +38,13 @@ function renderAppMitDateien() {
 }
 
 async function dateiAuswaehlen() {
+  // Klick in der Sidebar: diese Datei wird ausgewählt und die
+  // Detailansicht geöffnet (Ticket „Dateiauswahl in Sidebar").
+  const sidebar = await screen.findByRole("complementary", {
+    name: "Seitenleiste",
+  });
   fireEvent.click(
-    await screen.findByRole("button", {
+    await within(sidebar).findByRole("button", {
       name: `Kommentare für ${DATEI.name} anzeigen`,
     })
   );
