@@ -40,7 +40,8 @@ app.get('/api/files', async (_req, res) => {
   }
 });
 
-// GET /api/files/:id – liefert die Metadaten einer einzelnen Datei.
+// GET /api/files/:id – liefert die Metadaten einer einzelnen Datei
+// im API-Vertrag: id, name, mime_type, size, uploaded_at.
 app.get('/api/files/:id', async (req, res) => {
   try {
     const fileId = Number(req.params.id);

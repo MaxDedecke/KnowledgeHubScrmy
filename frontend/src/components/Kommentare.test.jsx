@@ -18,8 +18,9 @@ afterEach(() => {
 const DATEI = {
   id: 7,
   name: "vertrag.pdf",
+  mime_type: "application/pdf",
   size: 2048,
-  created_at: "2026-08-20T10:00:00Z",
+  uploaded_at: "2026-08-20T10:00:00Z",
 };
 
 const KOMMENTAR = {

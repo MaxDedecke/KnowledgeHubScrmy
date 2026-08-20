@@ -61,15 +61,27 @@ async function registerFile(db, file) {
 
 /**
  * Liefert die Metadaten einer einzelnen Datei anhand ihrer ID
- * (GET /files/:id). Unbekannte IDs werden mit `null` beantwortet,
- * damit die Route sauber 404 liefern kann.
+ * (GET /files/:id) im API-Vertrag mit genau den Feldern
+ * id, name, mime_type, size, uploaded_at. Unbekannte IDs werden mit
+ * `null` beantwortet, damit die Route sauber 404 liefern kann.
+ * Der MIME-Typ wird aus dem Dateinamen abgeleitet (wie beim Download),
+ * der Upload-Zeitpunkt ist in der DB als `created_at` gespeichert.
  */
 async function fetchFile(db, fileId) {
   const result = await db.query(
     'SELECT id, name, size, created_at FROM files WHERE id = $1',
     [fileId]
   );
-  return result.rowCount > 0 ? result.rows[0] : null;
+  if (result.rowCount === 0 || !result.rows[0]) return null;
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    mime_type: contentTypeFor(row.name),
+    size: row.size,
+    uploaded_at: row.created_at,
+  };
 }
 
 /**

@@ -159,9 +159,19 @@ test('GET /api/files/:id liefert die Metadaten einer Datei', async (t) => {
   const res = await fetch(`http://127.0.0.1:${port}/api/files/14`);
   assert.strictEqual(res.status, 200);
   const body = await res.json();
+  // API-Vertrag: genau die fünf Felder id, name, mime_type, size, uploaded_at.
+  assert.deepStrictEqual(Object.keys(body).sort(), [
+    'id',
+    'mime_type',
+    'name',
+    'size',
+    'uploaded_at',
+  ]);
   assert.strictEqual(body.id, 14);
   assert.strictEqual(body.name, 'vertrag.pdf');
+  assert.strictEqual(body.mime_type, 'application/pdf');
   assert.strictEqual(body.size, 2048);
+  assert.strictEqual(body.uploaded_at, '2026-08-20T10:00:00Z');
 });
 
 test('GET /api/files/:id antwortet mit 404 für unbekannte IDs', async (t) => {

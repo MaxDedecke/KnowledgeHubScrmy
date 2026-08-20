@@ -26,7 +26,7 @@ export async function fetchFiles() {
  * damit die Oberfläche den Fehlerzustand anzeigen kann.
  *
  * @param {number} fileId ID der Datei.
- * @returns {Promise<{id: number, name: string, size: number, created_at: string}>}
+ * @returns {Promise<{id: number, name: string, mime_type: string, size: number, uploaded_at: string}>}
  */
 export async function fetchFile(fileId) {
   const response = await fetch(`${API_BASE_URL}/api/files/${fileId}`);

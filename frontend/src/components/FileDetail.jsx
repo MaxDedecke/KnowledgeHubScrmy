@@ -132,7 +132,7 @@ export default function FileDetail({ fileId, onBack }) {
         : KOMMENTAR_STATUS.success;
 
   const meta = file
-    ? [formatBytes(file.size), formatDate(file.created_at)].filter(Boolean)
+    ? [formatBytes(file.size), formatDate(file.uploaded_at)].filter(Boolean)
     : [];
 
   return (
