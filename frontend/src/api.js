@@ -21,6 +21,38 @@ export async function fetchFiles() {
 }
 
 /**
+ * Lädt eine Datei über den Backend-Endpunkt GET /files/:id/download herunter
+ * und stößt den Browser-Download über einen Blob und temporären Link an.
+ * Wirft bei Netzwerk- oder HTTP-Fehlern (z. B. 404 bei gelöschter Datei),
+ * damit die Oberfläche den Fehler sichtbar machen kann.
+ *
+ * @param {number} fileId ID der Datei.
+ */
+export async function downloadFile(fileId) {
+  const response = await fetch(`${API_BASE_URL}/files/${fileId}/download`);
+  if (!response.ok) {
+    throw new Error(
+      `Datei konnte nicht heruntergeladen werden (HTTP ${response.status})`
+    );
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const filename = match ? match[1] : `datei-${fileId}.bin`;
+
+  // Temporären Objekt-URL erzeugen und Klick simulieren, damit der Browser
+  // die Datei mit korrektem Dateinamen herunterlädt.
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Lädt eine Datei als Multipart-Upload zum Backend hoch (POST /api/files,
  * Backend-Pfad /upload). Liefert den gespeicherten Metadatensatz im selben
  * Format wie fetchFiles zurück, damit die Dateiliste ohne erneutes Laden
