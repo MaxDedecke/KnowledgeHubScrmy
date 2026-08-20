@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool, initSchema } = require('./db');
-const { upload, registerFile } = require('./upload');
+const { upload, registerFile, downloadFile } = require('./upload');
 const { createKommentar, listKommentare } = require('./kommentare');
 
 const app = express();
@@ -64,6 +64,10 @@ app.post('/files/:id/kommentare', async (req, res) => {
     res.status(500).json({ error: 'Kommentar konnte nicht gespeichert werden.' });
   }
 });
+
+// GET /files/:id/download – liefert die gespeicherte Datei zum Download,
+// mit korrektem Content-Type und Content-Disposition-Header.
+app.get('/files/:id/download', downloadFile(pool));
 
 // GET /files/:id/kommentare – liefert alle Kommentare der Datei.
 app.get('/files/:id/kommentare', async (req, res) => {

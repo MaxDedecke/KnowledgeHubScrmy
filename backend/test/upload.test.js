@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const http = require('node:http');
 const test = require('node:test');
 const assert = require('node:assert');
 
@@ -45,6 +46,86 @@ test('writeToDisk erzeugt pro Aufruf einen eindeutigen Speicherpfad', () => {
 
 test('safeFilename entfernt unsichere Zeichen', () => {
   assert.strictEqual(upload.safeFilename('../beispiel.txt'), 'beispiel.txt');
+});
+
+test('contentTypeFor liefert den MIME-Typ anhand der Dateinamens-Endung', () => {
+  assert.strictEqual(upload.contentTypeFor('bericht.pdf'), 'application/pdf');
+  assert.strictEqual(upload.contentTypeFor('notiz.txt'), 'text/plain');
+  // Ohne erkennbare Endung einen sicheren Fallback liefern
+  assert.strictEqual(upload.contentTypeFor('datei-ohne-typ'), 'application/octet-stream');
+});
+
+// Baut eine minimale Express-App mit dem Download-Handler auf und zurück.
+// Der Pool wird übergeben, damit der Endpunkt ohne echte Datenbank testbar ist.
+function buildDownloadApp(pool) {
+  const express = require('express');
+  const { downloadFile } = require('../upload');
+  const app = express();
+  app.get('/files/:id/download', downloadFile(pool));
+  return app;
+}
+
+// Startet einen HTTP-Server und wartet, bis er wirklich zuhört,
+// bevor die Portnummer zurückgegeben wird.
+function listen(app) {
+  return new Promise((resolve) => {
+    const server = app.listen(0, '127.0.0.1', () => {
+      resolve({ server, port: server.address().port });
+    });
+  });
+}
+
+test('GET /files/:id/download liefert die Datei mit Content-Type und als Download', async (t) => {
+  // Reale Datei im Test-Upload-Ordner anlegen, deren Metadaten die
+  // gestubbte "DB" zurückgibt.
+  const storedPath = path.join(process.env.UPLOAD_DIR, 'stored-bericht.pdf');
+  fs.writeFileSync(storedPath, Buffer.from('Download-Inhalt'));
+
+  // Eigener Pool-Stub: liefert genau eine Datei mit den oben angelegten Daten.
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes('FROM files')) {
+        return {
+          rowCount: 1,
+          rows: [{ id: params[0], name: 'bericht.pdf', path: storedPath }],
+        };
+      }
+      return { rowCount: 0, rows: [] };
+    },
+  };
+
+  const app = buildDownloadApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const res = await fetch(`http://127.0.0.1:${port}/files/14/download`);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.headers.get('content-type'), 'application/pdf');
+  assert.match(
+    res.headers.get('content-disposition'),
+    /^attachment; filename="bericht\.pdf"$/
+  );
+  assert.strictEqual(await res.text(), 'Download-Inhalt');
+
+  fs.unlinkSync(storedPath);
+});
+
+test('GET /files/:id/download antwortet mit 404 für unbekannte IDs', async (t) => {
+  const pool = {
+    async query() {
+      // Kein Datensatz: unbekannte ID
+      return { rowCount: 0, rows: [] };
+    },
+  };
+
+  const app = buildDownloadApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const res = await fetch(`http://127.0.0.1:${port}/files/999/download`);
+  assert.strictEqual(res.status, 404);
+  const body = await res.json();
+  assert.match(body.error, /nicht gefunden/i);
 });
 
 test('parseFormData extrahiert Name und Inhalt einer multipart-Datei', async () => {
