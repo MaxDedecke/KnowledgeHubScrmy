@@ -13,10 +13,11 @@ function safeFilename(name) {
 }
 
 /**
- * Baut einen eindeutigen Speichernamen (Zeitstempel + bereinigter Name).
+ * Baut einen eindeutigen Speichernamen (Zeitstempel + Zufallssuffix + bereinigter Name),
+ * damit auch zwei Uploads in derselben Millisekunde nicht kollidieren.
  */
 function buildStoredName(originalName) {
-  return `${Date.now()}-${safeFilename(originalName)}`;
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeFilename(originalName)}`;
 }
 
 function ensureUploadDir() {

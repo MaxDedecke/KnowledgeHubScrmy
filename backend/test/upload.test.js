@@ -1,13 +1,15 @@
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert');
-const upload = require('./upload');
+
+// Eigener, leerer Upload-Ordner je Testlauf, damit die Tests unabhängig
+// von anderen Dateien und Resten früherer Läufe sind.
+process.env.UPLOAD_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'kh-upload-'));
+const upload = require('../upload');
 
 function parseMultipart(buffer, boundary) {
-  const delimiter = Buffer.from(`--${boundary}`);
-  // Feld- und Datei-Blöcke sind durch \r\n getrennt; wir suchen Kopfzeilen
-  // und Inhalt: Erste Kopfzeile nennt name="file"; danach folgt der Inhalt.
   const text = buffer.toString('binary');
   const headerMatch = text.match(
     /name="file"; filename="([^"]+)"\r\ncontent-type:[^\r\n]+\r\n\r\n/i
@@ -15,7 +17,9 @@ function parseMultipart(buffer, boundary) {
   if (!headerMatch) return null;
   const originalName = headerMatch[1];
   const contentStart = headerMatch.index + headerMatch[0].length;
-  const contentBuffer = buffer.subarray(contentStart, buffer.length - delimiter.length - 4);
+  const closingDelimiter = Buffer.from(`\r\n--${boundary}`);
+  const closingIndex = buffer.indexOf(closingDelimiter, contentStart);
+  const contentBuffer = buffer.subarray(contentStart, closingIndex);
   return { originalName, buffer: contentBuffer };
 }
 
@@ -26,7 +30,6 @@ test('writeToDisk speichert den Dateiinhalt auf dem Container-Dateisystem', () =
   assert.strictEqual(fs.readFileSync(storedPath, 'utf8'), 'Inhalt der Testdatei');
 
   fs.unlinkSync(storedPath);
-  fs.rmdirSync(path.dirname(storedPath));
 });
 
 test('writeToDisk erzeugt pro Aufruf einen eindeutigen Speicherpfad', () => {
@@ -38,7 +41,6 @@ test('writeToDisk erzeugt pro Aufruf einen eindeutigen Speicherpfad', () => {
 
   fs.unlinkSync(p1);
   fs.unlinkSync(p2);
-  fs.rmdirSync(path.dirname(p1));
 });
 
 test('safeFilename entfernt unsichere Zeichen', () => {
@@ -56,7 +58,7 @@ test('parseFormData extrahiert Name und Inhalt einer multipart-Datei', async () 
       `--${boundary}--\r\n`
   );
 
-  const parsed = parse(body, boundary);
+  const parsed = parseMultipart(body, boundary);
 
   assert.ok(parsed, 'Multipart-Body muss geparst werden');
   assert.strictEqual(parsed.originalName, 'notiz.txt');
