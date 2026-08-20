@@ -29,6 +29,12 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Datei auswählen" })
     ).toBeTruthy();
+    // Upload-Button erfüllt die Mindest-Klickziele von 44×44 px
+    const uploadButton = screen.getByRole("button", {
+      name: "Datei auswählen",
+    });
+    expect(uploadButton.className).toContain("min-h-11");
+    expect(uploadButton.className).toContain("min-w-11");
   });
 
   it("zeigt beim initialen Laden einen Ladezustand", () => {

@@ -125,9 +125,13 @@ describe("KommentarListe (in App integriert)", () => {
 describe("KommentarFormular", () => {
   it("deaktiviert das Speichern bei leerem Text", () => {
     render(<KommentarFormular fileId={7} onSaved={() => {}} />);
-    expect(
-      screen.getByRole("button", { name: "Kommentar speichern" }).disabled
-    ).toBe(true);
+    const submitButton = screen.getByRole("button", {
+      name: "Kommentar speichern",
+    });
+    expect(submitButton.disabled).toBe(true);
+    // Kommentar-Submit-Button erfüllt die Mindest-Klickziele von 44×44 px
+    expect(submitButton.className).toContain("min-h-11");
+    expect(submitButton.className).toContain("min-w-11");
   });
 
   it("speichert den Text und meldet den Kommentar nach oben", async () => {

@@ -119,6 +119,7 @@ function App() {
               type="button"
               onClick={handleSelectFile}
               disabled={isUploading}
+              className="min-h-11 min-w-11"
             >
               {isUploading ? "Wird hochgeladen …" : "Datei auswählen"}
             </Button>

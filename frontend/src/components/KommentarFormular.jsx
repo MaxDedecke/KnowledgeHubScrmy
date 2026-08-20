@@ -60,7 +60,7 @@ export default function KommentarFormular({ fileId, onSaved, onError }) {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className="w-full sm:w-auto"
+        className="min-h-11 min-w-11 w-full sm:w-auto"
       >
         {isPending ? "Wird gespeichert …" : "Kommentar speichern"}
       </Button>
