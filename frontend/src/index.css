@@ -3,23 +3,28 @@
 @tailwind utilities;
 
 :root {
-  /* Farb-Skala (Tokens aus docs/design-konzept.md) */
-  --color-primary: #2563eb;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f1f5f9;
-  --color-secondary-foreground: #0f172a;
-  --color-accent: #e0e7ff;
-  --color-accent-foreground: #1e293b;
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-  --color-success: #16a34a;
-  --color-destructive: #dc2626;
-  --color-warning: #d97706;
+  /* Farb-Skala (Tokens aus docs/design-konzept.md) im shadcn/ui-Namensschema.
+     Werte als RGB-Tripel (ohne Klammern), damit Tailwinds Alpha-Modifier
+     (z.B. bg-primary/90) damit rechnen können. Hex-Werte existieren NUR hier. */
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --primary: 37 99 235;
+  --primary-foreground: 255 255 255;
+  --secondary: 241 245 249;
+  --secondary-foreground: 15 23 42;
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+  --accent: 224 231 255;
+  --accent-foreground: 30 41 59;
+  --destructive: 220 38 38;
+  --destructive-foreground: 255 255 255;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 37 99 235;
 
   /* Spacing-Skala (Tailwind-Standardskala, 4px-Schritte) */
   --space-1: 0.25rem;
@@ -50,8 +55,8 @@ html {
 
 body {
   margin: 0;
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
   -webkit-font-smoothing: antialiased;
 }
 

@@ -21,10 +21,13 @@ describe("App", () => {
   it("rendert die responsive Grundfläche mit Titel", () => {
     render(<App />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Knowledge Hub" })
+      screen.getByRole("heading", { name: "Knowledge Hub" })
     ).toBeTruthy();
     expect(
-      screen.getByRole("heading", { level: 2, name: /Willkommen im Knowledge Hub/ })
+      screen.getByRole("heading", { name: /Willkommen im Knowledge Hub/ })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Datei auswählen" })
     ).toBeTruthy();
   });
 

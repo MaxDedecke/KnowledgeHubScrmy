@@ -4,32 +4,39 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Alle Farben kommen aus den CSS-Variablen der globalen Skala
+        // (frontend/src/index.css), keine Hex-Werte in der Config.
         primary: {
-          DEFAULT: "#2563EB",
-          foreground: "#FFFFFF",
+          DEFAULT: "rgb(var(--primary) / <alpha-value>)",
+          foreground: "rgb(var(--primary-foreground) / <alpha-value>)",
         },
         secondary: {
-          DEFAULT: "#F1F5F9",
-          foreground: "#0F172A",
+          DEFAULT: "rgb(var(--secondary) / <alpha-value>)",
+          foreground: "rgb(var(--secondary-foreground) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "#E0E7FF",
-          foreground: "#1E293B",
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          foreground: "rgb(var(--accent-foreground) / <alpha-value>)",
         },
-        background: "#F8FAFC",
-        foreground: "#0F172A",
+        destructive: {
+          DEFAULT: "rgb(var(--destructive) / <alpha-value>)",
+          foreground: "rgb(var(--destructive-foreground) / <alpha-value>)",
+        },
+        background: "rgb(var(--background) / <alpha-value>)",
+        foreground: "rgb(var(--foreground) / <alpha-value>)",
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#0F172A",
+          DEFAULT: "rgb(var(--card) / <alpha-value>)",
+          foreground: "rgb(var(--card-foreground) / <alpha-value>)",
         },
         muted: {
-          DEFAULT: "#F1F5F9",
-          foreground: "#64748B",
+          DEFAULT: "rgb(var(--muted) / <alpha-value>)",
+          foreground: "rgb(var(--muted-foreground) / <alpha-value>)",
         },
-        border: "#E2E8F0",
-        success: "#16A34A",
-        destructive: "#DC2626",
-        warning: "#D97706",
+        border: "rgb(var(--border) / <alpha-value>)",
+        input: "rgb(var(--input) / <alpha-value>)",
+        ring: "rgb(var(--ring) / <alpha-value>)",
+        success: "rgb(var(--success) / <alpha-value>)",
+        warning: "rgb(var(--warning) / <alpha-value>)",
       },
       fontFamily: {
         sans: [
