@@ -366,6 +366,96 @@ describe("App", () => {
     });
   });
 
+  it("beschriftet den Hamburger dynamisch und zeichnet die mobile Sidebar als Dialog aus", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
+    // Geschlossen: Hamburger mit aussagekräftigem Label, aria-expanded false.
+    const toggleButton = screen.getByRole("button", {
+      name: "Navigation öffnen",
+    });
+    expect(toggleButton.getAttribute("aria-label")).toBe("Navigation öffnen");
+    expect(toggleButton.getAttribute("aria-expanded")).toBe("false");
+    expect(toggleButton.getAttribute("aria-haspopup")).toBe("true");
+
+    fireEvent.click(toggleButton);
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+
+    // Dialog-Rolle und Modal-Verhalten sind gesetzt, Overlay ist aria-hidden.
+    expect(panel.getAttribute("aria-modal")).toBe("true");
+    expect(panel.getAttribute("tabindex")).toBe("-1");
+    expect(
+      within(panel).getByTestId("sidebar-backdrop").getAttribute("aria-hidden")
+    ).toBe("true");
+
+    // Der geöffnete Zustand schlägt sich auch in der Button-Beschriftung nieder.
+    expect(toggleButton.getAttribute("aria-label")).toBe("Navigation schließen");
+    expect(toggleButton.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("verschiebt den Fokus beim Öffnen in die Sidebar und beim Schließen zurück zum Hamburger", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
+    const toggleButton = screen.getByRole("button", {
+      name: "Navigation öffnen",
+    });
+    fireEvent.click(toggleButton);
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+
+    // Fokus wandert beim Öffnen in den Dialog (tabIndex={-1} macht ihn
+    // programmatisch fokussierbar, ohne in die Tab-Reihenfolge zu rücken).
+    await waitFor(() => {
+      expect(document.activeElement).toBe(panel);
+    });
+
+    fireEvent.click(
+      within(panel).getByRole("button", { name: "Navigation schließen" })
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Mobile Navigation" })
+      ).toBeNull();
+    });
+    // Fokus ist zum Hamburger-Button zurückgekehrt.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(toggleButton);
+    });
+  });
+
+  it("schließt die mobile Navigation per Escape und führt den Fokus zurück", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
+    const toggleButton = screen.getByRole("button", {
+      name: "Navigation öffnen",
+    });
+    fireEvent.click(toggleButton);
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(panel);
+    });
+
+    // Escape auf Dokumentebene (der Listener hängt an document) schließt das Panel.
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Mobile Navigation" })
+      ).toBeNull();
+    });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(toggleButton);
+    });
+  });
+
   it("schließt das Off-Canvas-Panel, sobald im Panel eine Datei ausgewählt wird", async () => {
     vi.spyOn(api, "getFiles").mockResolvedValue([
       { id: 1, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },

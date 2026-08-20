@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "./ui/button.jsx";
 
 /**
@@ -35,16 +36,51 @@ export default function AppShell({
   onToggleSidebarOpen,
   children,
 }) {
+  // Barrierefreiheit des mobilen Off-Canvas-Panels:
+  // - Beim Öffnen wandert der Fokus in das Panel (der Container trägt
+  //   tabIndex={-1}, damit er fokussierbar ist, ohne in der Tab-Reihenfolge
+  //   zu stehen), beim Schließen zurück zum Hamburger-Button.
+  // - Escape schließt das Panel; der Fokus springt dabei ebenfalls zurück.
+  const dialogRef = useRef(null);
+  const toggleButtonRef = useRef(null);
+  // Merkt, ob das Panel geöffnet wurde, damit beim Schließen der Fokus nur
+  // zum Hamburger zurückgeführt wird, wenn er zuvor (beim Öffnen) in das
+  // Panel gelegt wurde – nicht etwa beim Erst-Mount der Seite.
+  const wasOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      wasOpenedRef.current = true;
+      dialogRef.current?.focus({ preventScroll: true });
+    } else if (wasOpenedRef.current) {
+      toggleButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    if (!sidebarOpen) {
+      return undefined;
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onToggleSidebarOpen?.(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarOpen, onToggleSidebarOpen]);
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-card">
         <div className={`flex h-14 items-center gap-3 ${CONTENT_CONTAINER}`}>
           <Button
+            ref={toggleButtonRef}
             type="button"
             variant="ghost"
             size="icon"
             onClick={() => onToggleSidebarOpen?.(true)}
-            aria-label="Navigation öffnen"
+            aria-label={sidebarOpen ? "Navigation schließen" : "Navigation öffnen"}
             aria-expanded={sidebarOpen}
             aria-haspopup="true"
             className="min-h-11 min-w-11 text-muted-foreground md:hidden"
@@ -73,9 +109,11 @@ export default function AppShell({
 
       {sidebar && sidebarOpen && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Mobile Navigation"
+          tabIndex={-1}
           className="fixed inset-0 z-20 md:hidden"
         >
           <div
