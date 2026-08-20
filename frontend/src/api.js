@@ -21,7 +21,25 @@ export async function fetchFiles() {
 }
 
 /**
- * Lädt eine Datei über den Backend-Endpunkt GET /files/:id/download herunter
+ * Lädt die Metadaten einer einzelnen Datei (GET /api/files/:id).
+ * Wirft bei Netzwerk- oder HTTP-Fehlern (z. B. 404 bei unbekannter Datei),
+ * damit die Oberfläche den Fehlerzustand anzeigen kann.
+ *
+ * @param {number} fileId ID der Datei.
+ * @returns {Promise<{id: number, name: string, size: number, created_at: string}>}
+ */
+export async function fetchFile(fileId) {
+  const response = await fetch(`${API_BASE_URL}/api/files/${fileId}`);
+  if (!response.ok) {
+    throw new Error(
+      `Datei konnte nicht geladen werden (HTTP ${response.status})`
+    );
+  }
+  return response.json();
+}
+
+/**
+ * Lädt die Datei über den Backend-Endpunkt GET /api/files/:id/download herunter
  * und stößt den Browser-Download über einen Blob und temporären Link an.
  * Wirft bei Netzwerk- oder HTTP-Fehlern (z. B. 404 bei gelöschter Datei),
  * damit die Oberfläche den Fehler sichtbar machen kann.
@@ -29,7 +47,7 @@ export async function fetchFiles() {
  * @param {number} fileId ID der Datei.
  */
 export async function downloadFile(fileId) {
-  const response = await fetch(`${API_BASE_URL}/files/${fileId}/download`);
+  const response = await fetch(`${API_BASE_URL}/api/files/${fileId}/download`);
   if (!response.ok) {
     throw new Error(
       `Datei konnte nicht heruntergeladen werden (HTTP ${response.status})`

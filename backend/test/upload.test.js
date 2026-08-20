@@ -65,6 +65,30 @@ function buildDownloadApp(pool) {
   return app;
 }
 
+// Baut eine minimale Express-App mit der GET /api/files/:id-Route auf.
+// Der Pool wird übergeben, damit der Endpunkt ohne echte Datenbank testbar ist.
+function buildFileDetailApp(pool) {
+  const express = require('express');
+  const { fetchFile } = require('../upload');
+  const app = express();
+  app.get('/api/files/:id', async (req, res) => {
+    try {
+      const fileId = Number(req.params.id);
+      if (!Number.isInteger(fileId) || fileId <= 0) {
+        return res.status(400).json({ error: 'Ungültige Datei-ID.' });
+      }
+      const file = await fetchFile(pool, fileId);
+      if (!file) {
+        return res.status(404).json({ error: 'Datei nicht gefunden.' });
+      }
+      res.json(file);
+    } catch (err) {
+      res.status(500).json({ error: 'Datei konnte nicht geladen werden.' });
+    }
+  });
+  return app;
+}
+
 // Startet einen HTTP-Server und wartet, bis er wirklich zuhört,
 // bevor die Portnummer zurückgegeben wird.
 function listen(app) {
@@ -108,6 +132,66 @@ test('GET /files/:id/download liefert die Datei mit Content-Type und als Downloa
   assert.strictEqual(await res.text(), 'Download-Inhalt');
 
   fs.unlinkSync(storedPath);
+});
+
+test('GET /api/files/:id liefert die Metadaten einer Datei', async (t) => {
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes('FROM files')) {
+        return {
+          rowCount: 1,
+          rows: [{
+            id: params[0],
+            name: 'vertrag.pdf',
+            size: 2048,
+            created_at: '2026-08-20T10:00:00Z',
+          }],
+        };
+      }
+      return { rowCount: 0, rows: [] };
+    },
+  };
+
+  const app = buildFileDetailApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const res = await fetch(`http://127.0.0.1:${port}/api/files/14`);
+  assert.strictEqual(res.status, 200);
+  const body = await res.json();
+  assert.strictEqual(body.id, 14);
+  assert.strictEqual(body.name, 'vertrag.pdf');
+  assert.strictEqual(body.size, 2048);
+});
+
+test('GET /api/files/:id antwortet mit 404 für unbekannte IDs', async (t) => {
+  const pool = {
+    async query() {
+      return { rowCount: 0, rows: [] };
+    },
+  };
+
+  const app = buildFileDetailApp(pool);
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const res = await fetch(`http://127.0.0.1:${port}/api/files/999`);
+  assert.strictEqual(res.status, 404);
+  const body = await res.json();
+  assert.match(body.error, /nicht gefunden/i);
+});
+
+test('GET /api/files/:id antwortet mit 400 für ungültige IDs', async (t) => {
+  const app = buildFileDetailApp({
+    async query() {
+      return { rowCount: 0, rows: [] };
+    },
+  });
+  const { server, port } = await listen(app);
+  t.after(() => server.close());
+
+  const res = await fetch(`http://127.0.0.1:${port}/api/files/abc`);
+  assert.strictEqual(res.status, 400);
 });
 
 test('GET /files/:id/download antwortet mit 404 für unbekannte IDs', async (t) => {

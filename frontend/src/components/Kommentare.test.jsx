@@ -31,6 +31,7 @@ const KOMMENTAR = {
 
 function renderAppMitDateien() {
   vi.spyOn(api, "fetchFiles").mockResolvedValue([DATEI]);
+  vi.spyOn(api, "fetchFile").mockResolvedValue(DATEI);
   return render(<App />);
 }
 

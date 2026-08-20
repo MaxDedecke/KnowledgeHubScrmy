@@ -60,7 +60,20 @@ async function registerFile(db, file) {
 }
 
 /**
- * Liefert einen Express-Handler für GET /files/:id/download.
+ * Liefert die Metadaten einer einzelnen Datei anhand ihrer ID
+ * (GET /files/:id). Unbekannte IDs werden mit `null` beantwortet,
+ * damit die Route sauber 404 liefern kann.
+ */
+async function fetchFile(db, fileId) {
+  const result = await db.query(
+    'SELECT id, name, size, created_at FROM files WHERE id = $1',
+    [fileId]
+  );
+  return result.rowCount > 0 ? result.rows[0] : null;
+}
+
+/**
+ * Liefert einen Handler für GET /files/:id/download.
  * Der Handler lädt die Datei mit korrektem Content-Type und als Download
  * (Content-Disposition: attachment) aus. Unbekannte oder nicht mehr auf dem
  * Dateisystem vorhandene Dateien beantwortet er mit 404.
@@ -127,4 +140,5 @@ module.exports = {
   createUploadMiddleware,
   contentTypeFor,
   downloadFile,
+  fetchFile,
 };

@@ -32,7 +32,7 @@ describe("downloadFile", () => {
 
     await downloadFile(7);
 
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/files/7/download");
+    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files/7/download");
     expect(clickedLink).not.toBeNull();
     expect(clickedLink.href).toBe("blob:mock");
     expect(clickedLink.download).toBe("vertrag.pdf");
@@ -52,7 +52,7 @@ describe("downloadFile", () => {
     await expect(downloadFile(99)).rejects.toThrow(
       "Datei konnte nicht heruntergeladen werden (HTTP 404)"
     );
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/files/99/download");
+    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files/99/download");
     expect(document.querySelector('a[download]')).toBeNull();
   });
 

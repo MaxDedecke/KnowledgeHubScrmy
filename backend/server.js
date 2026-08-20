@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool, initSchema } = require('./db');
-const { upload, registerFile, downloadFile } = require('./upload');
+const { upload, registerFile, downloadFile, fetchFile } = require('./upload');
 const { createKommentar, listKommentare } = require('./kommentare');
 
 const app = express();
@@ -8,8 +8,8 @@ const PORT = Number(process.env.PORT || 3000);
 
 app.use(express.json());
 
-// POST /upload – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
-app.post('/upload', upload.single('file'), async (req, res) => {
+// POST /api/files – nimmt eine Datei (Multipart-Feld "file") an und speichert sie.
+app.post('/api/files', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Keine Datei im Feld "file" angegeben.' });
@@ -27,8 +27,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// GET /files – liefert die Liste aller gespeicherten Dateien (neueste zuerst).
-app.get('/files', async (_req, res) => {
+// GET /api/files – liefert die Liste aller gespeicherten Dateien (neueste zuerst).
+app.get('/api/files', async (_req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, name, size, created_at FROM files ORDER BY created_at DESC, id DESC'
@@ -40,8 +40,27 @@ app.get('/files', async (_req, res) => {
   }
 });
 
-// POST /files/:id/kommentare – legt einen Kommentar zu einer Datei an.
-app.post('/files/:id/kommentare', async (req, res) => {
+// GET /api/files/:id – liefert die Metadaten einer einzelnen Datei.
+app.get('/api/files/:id', async (req, res) => {
+  try {
+    const fileId = Number(req.params.id);
+    if (!Number.isInteger(fileId) || fileId <= 0) {
+      return res.status(400).json({ error: 'Ungültige Datei-ID.' });
+    }
+
+    const file = await fetchFile(pool, fileId);
+    if (!file) {
+      return res.status(404).json({ error: 'Datei nicht gefunden.' });
+    }
+    res.json(file);
+  } catch (err) {
+    console.error('Datei konnte nicht geladen werden:', err);
+    res.status(500).json({ error: 'Datei konnte nicht geladen werden.' });
+  }
+});
+
+// POST /api/files/:id/kommentare – legt einen Kommentar zu einer Datei an.
+app.post('/api/files/:id/kommentare', async (req, res) => {
   try {
     const fileId = Number(req.params.id);
     if (!Number.isInteger(fileId) || fileId <= 0) {
@@ -65,12 +84,12 @@ app.post('/files/:id/kommentare', async (req, res) => {
   }
 });
 
-// GET /files/:id/download – liefert die gespeicherte Datei zum Download,
+// GET /api/files/:id/download – liefert die gespeicherte Datei zum Download,
 // mit korrektem Content-Type und Content-Disposition-Header.
-app.get('/files/:id/download', downloadFile(pool));
+app.get('/api/files/:id/download', downloadFile(pool));
 
-// GET /files/:id/kommentare – liefert alle Kommentare der Datei.
-app.get('/files/:id/kommentare', async (req, res) => {
+// GET /api/files/:id/kommentare – liefert alle Kommentare der Datei.
+app.get('/api/files/:id/kommentare', async (req, res) => {
   try {
     const fileId = Number(req.params.id);
     if (!Number.isInteger(fileId) || fileId <= 0) {
