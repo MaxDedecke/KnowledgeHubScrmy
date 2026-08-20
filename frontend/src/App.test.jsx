@@ -85,6 +85,60 @@ describe("App", () => {
     expect(screen.queryByText("Wird geladen …")).toBeNull();
     expect(screen.queryByText("Noch keine Dateien vorhanden")).toBeNull();
   });
+
+  it("zeigt einen neu hochgeladenen Upload unmittelbar in der Liste", async () => {
+    vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
+    const uploadMock = vi.spyOn(api, "uploadFile").mockResolvedValue({
+      id: 3,
+      name: "frisch.pdf",
+      size: 500,
+      created_at: "2026-08-20T11:00:00Z",
+    });
+    const { container } = render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
+      ).toBeTruthy();
+    });
+
+    const fileInput = container.querySelector('input[type="file"]');
+    const file = new File(["Inhalt"], "frisch.pdf", { type: "application/pdf" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("frisch.pdf")).toBeTruthy();
+    });
+    expect(uploadMock).toHaveBeenCalledWith(file);
+    // Kein erneutes Laden der kompletten Liste – Upload-Ergebnis aktualisiert direkt.
+    expect(api.fetchFiles).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("heading", { name: "Noch keine Dateien vorhanden" })
+    ).toBeNull();
+  });
+
+  it("zeigt eine Fehlermeldung, wenn der Upload fehlschlägt", async () => {
+    vi.spyOn(api, "fetchFiles").mockResolvedValue([]);
+    vi.spyOn(api, "uploadFile").mockRejectedValue(new Error("Upload kaputt"));
+    const { container } = render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
+      ).toBeTruthy();
+    });
+
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["x"], "kaputt.txt")] },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Datei konnte nicht hochgeladen werden/)
+      ).toBeTruthy();
+    });
+  });
 });
 
 describe("FileList", () => {

@@ -1,12 +1,12 @@
-// Dateiliste als Card-Layout mit eindeutig sichtbaren Zuständen für
-// Laden, leere Liste und Fehler. "idle" dient als neutraler Vorzustand,
-// bevor der erste Ladevorgang startet.
-const STATUS = {
-  loading: "loading",
-  empty: "empty",
-  error: "error",
-  success: "success",
-};
+import { Button } from "./ui/button.jsx";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card.jsx";
+import { Skeleton } from "./ui/skeleton.jsx";
 
 const STATUS_LABELS = {
   loading: "Wird geladen …",
@@ -50,16 +50,16 @@ function LoadingList() {
       <p className="sr-only">{STATUS_LABELS.loading}</p>
       <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {[0, 1, 2, 3].map((key) => (
-          <li
-            key={key}
-            className="animate-pulse rounded-lg border border-border bg-card p-6"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="h-6 w-3/5 rounded bg-muted" />
-              <div className="h-10 w-10 rounded-lg bg-muted" />
-            </div>
-            <div className="mt-6 h-4 w-2/5 rounded bg-muted" />
-            <div className="mt-3 h-4 w-1/3 rounded bg-muted" />
+          <li key={key}>
+            <Card className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-3">
+                  <Skeleton className="h-6 w-3/5" />
+                  <Skeleton className="h-4 w-2/5" />
+                </div>
+                <Skeleton className="h-10 w-10 rounded-lg" />
+              </div>
+            </Card>
           </li>
         ))}
       </ul>
@@ -72,33 +72,35 @@ function LoadingList() {
  */
 function EmptyList() {
   return (
-    <section className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
-      <div
-        className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted"
-        aria-hidden="true"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-muted-foreground"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+    <Card className="p-6">
+      <CardContent className="flex flex-col items-center pt-6 text-center">
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-muted"
+          aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-      </div>
-      <h2 className="mt-4 text-lg font-semibold text-card-foreground">
-        {STATUS_LABELS.empty}
-      </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Laden Sie Ihre erste Datei hoch, um den Wissensbestand zu starten.
-      </p>
-    </section>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+        </div>
+        <h2 className="mt-4 text-lg font-semibold text-card-foreground">
+          {STATUS_LABELS.empty}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Laden Sie Ihre erste Datei hoch, um den Wissensbestand zu starten.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -107,11 +109,8 @@ function EmptyList() {
  */
 function ErrorList({ onRetry }) {
   return (
-    <section
-      role="alert"
-      className="rounded-lg border border-destructive bg-card p-6"
-    >
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card role="alert" className="border-destructive/40 bg-card">
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -129,18 +128,19 @@ function ErrorList({ onRetry }) {
             />
           </svg>
           <div>
-            <h2 className="text-lg font-semibold text-card-foreground">
+            <CardTitle className="text-lg text-card-foreground">
               {STATUS_LABELS.error}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            </CardTitle>
+            <CardDescription className="mt-1">
               Bitte versuchen Sie es erneut.
-            </p>
+            </CardDescription>
           </div>
         </div>
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onRetry}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="shrink-0"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -158,9 +158,9 @@ function ErrorList({ onRetry }) {
             />
           </svg>
           Erneut versuchen
-        </button>
-      </div>
-    </section>
+        </Button>
+      </CardHeader>
+    </Card>
   );
 }
 
@@ -177,40 +177,42 @@ function FileCards({ files }) {
         ].filter(Boolean);
         return (
           <li key={file.id}>
-            <article className="flex h-full items-start justify-between gap-4 rounded-lg border border-border bg-card p-6">
-              <div className="min-w-0">
-                <h3
-                  className="truncate text-lg font-semibold text-card-foreground"
-                  title={file.name}
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <CardTitle
+                    className="truncate text-lg text-card-foreground"
+                    title={file.name}
+                  >
+                    {file.name}
+                  </CardTitle>
+                  {meta.length > 0 && (
+                    <CardDescription className="mt-1">
+                      {meta.join(" · ")}
+                    </CardDescription>
+                  )}
+                </div>
+                <div
+                  className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"
+                  aria-hidden="true"
                 >
-                  {file.name}
-                </h3>
-                {meta.length > 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {meta.join(" · ")}
-                  </p>
-                )}
-              </div>
-              <div
-                className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"
-                aria-hidden="true"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-            </article>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+              </CardHeader>
+            </Card>
           </li>
         );
       })}
@@ -220,16 +222,17 @@ function FileCards({ files }) {
 
 /**
  * Einstiegspunkt der Dateiliste: zeigt je nach `status` den passenden Zustand.
- * `status` darf nur Werte aus STATUS (loading, empty, error, success) tragen.
+ * `status` darf nur Werte aus LIST_STATUS (loading, empty, error, success)
+ * tragen; siehe App.jsx.
  */
 export default function FileList({ status, files = [], onRetry }) {
-  if (status === STATUS.loading) {
+  if (status === "loading") {
     return <LoadingList />;
   }
-  if (status === STATUS.error) {
+  if (status === "error") {
     return <ErrorList onRetry={onRetry} />;
   }
-  if (status === STATUS.empty || files.length === 0) {
+  if (status === "empty" || files.length === 0) {
     return <EmptyList />;
   }
   return <FileCards files={files} />;

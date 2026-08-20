@@ -19,3 +19,25 @@ export async function fetchFiles() {
   }
   return response.json();
 }
+
+/**
+ * Lädt eine Datei als Multipart-Upload zum Backend hoch (POST /api/files,
+ * Backend-Pfad /upload). Liefert den gespeicherten Metadatensatz im selben
+ * Format wie fetchFiles zurück, damit die Dateiliste ohne erneutes Laden
+ * aktualisiert werden kann.
+ *
+ * @param {File} file Datei aus der Dateiauswahl des Browsers.
+ * @returns {Promise<{id: number, name: string, size: number, created_at: string}>}
+ */
+export async function uploadFile(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/api/files`, {
+    method: "POST",
+    body,
+  });
+  if (!response.ok) {
+    throw new Error(`Datei konnte nicht hochgeladen werden (HTTP ${response.status})`);
+  }
+  return response.json();
+}

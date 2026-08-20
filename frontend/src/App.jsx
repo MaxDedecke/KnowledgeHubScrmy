@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFiles } from "./api.js";
+import { fetchFiles, uploadFile } from "./api.js";
 import FileList from "./components/FileList.jsx";
 import { Button } from "./components/ui/button.jsx";
 import {
@@ -31,6 +31,8 @@ function App() {
   const [isError, setIsError] = useState(false);
   const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef(null);
 
   const loadFiles = useCallback(async () => {
@@ -51,20 +53,38 @@ function App() {
     loadFiles();
   }, [loadFiles]);
 
-  // Für die kommende Upload-Komponente: Neue Dateien ohne Seitenneuladen
-  // direkt an den Anfang der Liste aufnehmen (passend zur Backend-Sortierung,
-  // neueste zuerst).
-  const addFiles = useCallback((newFiles) => {
-    setFiles((current) => [...newFiles, ...current]);
-  }, []);
-
   const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelection = (event) => {
+  const handleFileSelection = async (event) => {
     const file = event.target.files?.[0];
-    setSelectedFileName(file ? file.name : "");
+    if (!file) {
+      return;
+    }
+    setSelectedFileName(file.name);
+    setUploadError("");
+    setIsUploading(true);
+    try {
+      const uploaded = await uploadFile(file);
+      // Neue Datei ohne Seitenneuladen unmittelbar in die Liste aufnehmen
+      // (Backend sortiert neueste zuerst; der Upload antwortet mit dem
+      // frisch gespeicherten Metadatensatz).
+      setFiles((current) =>
+        current.some((entry) => entry.id === uploaded.id)
+          ? current
+          : [uploaded, ...current]
+      );
+      setSelectedFileName("");
+      setHasInitialLoaded(true);
+    } catch {
+      setUploadError(
+        "Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      );
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
   };
 
   const status = deriveListStatus(files, hasInitialLoaded, isError);
@@ -93,13 +113,17 @@ function App() {
               <Input
                 value={selectedFileName}
                 onChange={() => {}}
-                placeholder="Noch keine Datei ausgewählt"
+                placeholder={isUploading ? "Wird hochgeladen …" : "Noch keine Datei ausgewählt"}
                 readOnly
                 aria-label="Ausgewählte Datei"
                 className="sm:max-w-sm"
               />
-              <Button type="button" onClick={handleSelectFile}>
-                Datei auswählen
+              <Button
+                type="button"
+                onClick={handleSelectFile}
+                disabled={isUploading}
+              >
+                {isUploading ? "Wird hochgeladen …" : "Datei auswählen"}
               </Button>
               <input
                 ref={fileInputRef}
@@ -110,6 +134,11 @@ function App() {
                 tabIndex={-1}
               />
             </div>
+            {uploadError && (
+              <p role="alert" className="mt-3 text-sm text-destructive">
+                {uploadError}
+              </p>
+            )}
           </CardContent>
         </Card>
 
