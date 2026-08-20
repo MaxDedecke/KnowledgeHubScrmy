@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadFile, getFiles } from "../api.js";
+import { downloadFile, getFiles, uploadFile } from "../api.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -55,6 +55,58 @@ describe("getFiles", () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
 
     await expect(getFiles()).rejects.toThrow(TypeError);
+  });
+});
+
+describe("uploadFile", () => {
+  it("leitet die konkrete Fehlermeldung des Backends bei abgelehntem Upload weiter", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: "Datei ist zu groß. Maximale Größe ist 30 MB.",
+      }),
+    });
+
+    await expect(
+      uploadFile(new File(["x"], "gross.pdf"))
+    ).rejects.toThrow("Datei ist zu groß. Maximale Größe ist 30 MB.");
+  });
+
+  it("leitet die Meldung für nicht erlaubte Dateitypen unverändert weiter", async () => {
+    const message =
+      'Dateityp "application/zip" ist nicht erlaubt. Erlaubt sind: image/png, image/jpeg, application/pdf, text/plain.';
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: message }),
+    });
+
+    await expect(
+      uploadFile(new File(["x"], "schadcode.malware"))
+    ).rejects.toThrow(message);
+  });
+
+  it("liefert die Metadaten der hochgeladenen Datei im Erfolgsfall zurück", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 3,
+        name: "notiz.txt",
+        size: 7,
+        created_at: "2026-08-20T12:00:00Z",
+      }),
+    });
+
+    const file = new File(["Inhalt"], "notiz.txt", { type: "text/plain" });
+    const result = await uploadFile(file);
+
+    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files", {
+      method: "POST",
+      body: expect.any(FormData),
+    });
+    expect(result).toMatchObject({ id: 3, name: "notiz.txt" });
   });
 });
 

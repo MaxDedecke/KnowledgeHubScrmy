@@ -160,22 +160,41 @@ describe("App", () => {
     ).toBeNull();
   });
 
-  it("zeigt bei fehlgeschlagenem Upload das Alert-Muster mit Fehlermeldung", async () => {
+  it("zeigt bei fehlgeschlagenem Upload die konkrete Backend-Fehlermeldung im Alert", async () => {
     const { fileInput } = await renderUploadTest({
-      upload: () => Promise.reject(new Error("Upload kaputt")),
+      upload: () =>
+        Promise.reject(
+          new Error("Datei ist zu groß. Maximale Größe ist 30 MB.")
+        ),
     });
 
     fireEvent.change(fileInput, {
-      target: { files: [new File(["x"], "kaputt.txt")] },
+      target: { files: [new File(["x"], "gross.pdf")] },
     });
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeTruthy();
     });
     expect(screen.getByText("Upload fehlgeschlagen")).toBeTruthy();
+    // Die exakte, vom Backend gelieferte Meldung erscheint im Alert –
+    // nicht mehr die generische Standardmeldung.
+    expect(
+      screen.getByText("Datei ist zu groß. Maximale Größe ist 30 MB.")
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(
+        "Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      )
+    ).toBeNull();
+  });
+
+  it("zeigt unter dem Upload-Button den Hinweis auf erlaubte Dateitypen und die 30-MB-Grenze", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
     expect(
       screen.getByText(
-        "Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+        "Erlaubte Dateitypen: PNG, JPEG, PDF, TXT · max. 30 MB"
       )
     ).toBeTruthy();
   });

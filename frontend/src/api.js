@@ -88,7 +88,20 @@ export async function uploadFile(file) {
     body,
   });
   if (!response.ok) {
-    throw new Error(`Datei konnte nicht hochgeladen werden (HTTP ${response.status})`);
+    // Das Backend beantwortet abgelehnte Uploads mit einer konkreten Meldung
+    // (z. B. „Datei ist zu groß…“ oder „Dateityp … ist nicht erlaubt…“). Die
+    // geben wir unverändert weiter, damit die Oberfläche sie direkt anzeigen
+    // kann. Ohne JSON-Body fällt die Meldung auf die generische zurück.
+    let message = `Datei konnte nicht hochgeladen werden (HTTP ${response.status})`;
+    try {
+      const payload = await response.json();
+      if (typeof payload?.error === "string" && payload.error.trim() !== "") {
+        message = payload.error;
+      }
+    } catch {
+      // kein lesbarer JSON-Body – generische Meldung beibehalten
+    }
+    throw new Error(message);
   }
   return response.json();
 }
