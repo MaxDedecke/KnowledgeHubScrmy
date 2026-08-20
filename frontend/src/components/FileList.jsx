@@ -108,37 +108,30 @@ function EmptyList() {
 }
 
 /**
- * Fehlerzustand: Alert mit verständlicher Meldung und Retry-Button.
+ * Fehlerzustand: Alert im gleichen Muster wie die Download-Fehlermeldung,
+ * mit verständlicher Meldung und Retry-Button.
  */
 function ErrorList({ onRetry }) {
   return (
-    <Card role="alert" className="border-destructive/40 bg-card">
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mt-0.5 h-5 w-5 shrink-0 text-destructive"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-          <div>
-            <CardTitle className="text-lg text-card-foreground">
-              {STATUS_LABELS.error}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Bitte versuchen Sie es erneut.
-            </CardDescription>
-          </div>
-        </div>
+    <Alert variant="destructive" className="bg-destructive/5">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </svg>
+      <AlertTitle>{STATUS_LABELS.error}</AlertTitle>
+      <AlertDescription className="flex flex-wrap items-center gap-3">
+        Bitte versuchen Sie es erneut.
         <Button
           type="button"
           variant="secondary"
@@ -162,8 +155,8 @@ function ErrorList({ onRetry }) {
           </svg>
           Erneut versuchen
         </Button>
-      </CardHeader>
-    </Card>
+      </AlertDescription>
+    </Alert>
   );
 }
 
