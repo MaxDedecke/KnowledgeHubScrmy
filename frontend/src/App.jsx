@@ -39,6 +39,7 @@ function App() {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
   const [selectedFileId, setSelectedFileId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const loadFiles = useCallback(async () => {
@@ -65,8 +66,10 @@ function App() {
 
   const handleFileClick = (file) => {
     // Klick-Handler der Sidebar (und der Dateiliste): setzt selectedFileId,
-    // wodurch die Hauptansicht die Detailansicht dieser Datei öffnet.
+    // wodurch die Hauptansicht die Detailansicht dieser Datei öffnet. Auf
+    // Mobile schließt die Auswahl zugleich das Off-Canvas-Navigationspanel.
     setSelectedFileId(file.id);
+    setSidebarOpen(false);
   };
 
   const handleFileSelection = async (event) => {
@@ -105,6 +108,8 @@ function App() {
 
   return (
     <AppShell
+      sidebarOpen={sidebarOpen}
+      onToggleSidebarOpen={setSidebarOpen}
       sidebar={
         <Sidebar
           files={files}

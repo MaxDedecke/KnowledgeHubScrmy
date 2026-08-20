@@ -284,6 +284,87 @@ describe("App", () => {
     // Dateiname erscheint in Sidebar und Detailansicht.
     expect(screen.getAllByText("vertrag.pdf").length).toBeGreaterThanOrEqual(2);
   });
+
+  it("öffnet die Sidebar auf Mobile als Off-Canvas-Panel und schließt es über den X-Button", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
+    // Geschlossen: kein dialog, aber der Hamburger ist sichtbar.
+    expect(screen.queryByRole("dialog", { name: "Mobile Navigation" })).toBeNull();
+    const openButton = screen.getByRole("button", { name: "Navigation öffnen" });
+    expect(openButton.className).toContain("md:hidden");
+
+    fireEvent.click(openButton);
+
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+    expect(within(panel).getByRole("complementary", { name: "Seitenleiste" })).toBeTruthy();
+    expect(within(panel).getByRole("heading", { name: "Dateien" })).toBeTruthy();
+    expect(openButton.getAttribute("aria-expanded")).toBe("true");
+
+    // Schließen über den X-Button im Panel.
+    fireEvent.click(within(panel).getByRole("button", { name: "Navigation schließen" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation" })).toBeNull();
+    });
+  });
+
+  it("schließt die mobile Navigation per Klick auf den Backdrop", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Navigation öffnen" }));
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+
+    fireEvent.click(within(panel).getByTestId("sidebar-backdrop"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation" })).toBeNull();
+    });
+  });
+
+  it("schließt das Off-Canvas-Panel, sobald im Panel eine Datei ausgewählt wird", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([
+      { id: 1, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },
+    ]);
+    vi.spyOn(api, "fetchFile").mockResolvedValue({
+      id: 1,
+      name: "vertrag.pdf",
+      mime_type: "application/pdf",
+      size: 2048,
+      uploaded_at: "2026-08-20T10:00:00Z",
+    });
+    vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Navigation öffnen" }));
+    const panel = await screen.findByRole("dialog", {
+      name: "Mobile Navigation",
+    });
+    await waitFor(() => {
+      expect(
+        within(panel).getByRole("button", {
+          name: "Kommentare für vertrag.pdf anzeigen",
+        })
+      ).toBeTruthy();
+    });
+
+    fireEvent.click(
+      within(panel).getByRole("button", {
+        name: "Kommentare für vertrag.pdf anzeigen",
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Mobile Navigation" })).toBeNull();
+    });
+    // Auswahl hat die Detailansicht geöffnet.
+    expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+  });
 });
 
 describe("FileList", () => {
