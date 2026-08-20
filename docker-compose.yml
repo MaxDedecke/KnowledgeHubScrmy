@@ -8,8 +8,13 @@ services:
       POSTGRES_DB: knowledge
     volumes:
       - db-data:/var/lib/postgresql/data
+    # Prüft gegen Cluster-Superuser "postgres" und Datenbank "postgres":
+    # beide existieren in jedem Postgres-Cluster, egal ob das Volume frisch
+    # initialisiert oder aus einem früheren Lauf (Superuser postgres) übernommen
+    # wurde. So hängt der Healthcheck nicht von der Existenz der Rolle
+    # "knowledge" ab, die bei einem einmal initialisierten Volume fehlen kann.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
       timeout: 3s
       retries: 10
