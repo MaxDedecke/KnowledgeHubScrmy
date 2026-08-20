@@ -4,12 +4,11 @@ import { Button } from "./ui/button.jsx";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.jsx";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "./ui/card.jsx";
 import { Skeleton } from "./ui/skeleton.jsx";
+import { ListState } from "./ListState.jsx";
 
 const STATUS_LABELS = {
   loading: "Wird geladen …",
@@ -17,6 +16,30 @@ const STATUS_LABELS = {
   error: "Dateiliste konnte nicht geladen werden",
   success: "Dateien geladen",
 };
+
+/**
+ * Dokument-Icon für den Leerzustand der Dateiliste – gleiches Muster wie
+ * beim Kommentar-Leerzustand.
+ */
+function EmptyFileIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-6 w-6 text-muted-foreground"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
+  );
+}
 
 export function formatBytes(size) {
   if (typeof size !== "number" || Number.isNaN(size) || size < 0) {
@@ -67,96 +90,6 @@ function LoadingList() {
         ))}
       </ul>
     </div>
-  );
-}
-
-/**
- * Leerer Zustand: zentrierter Hinweis, dass noch keine Dateien existieren.
- */
-function EmptyList() {
-  return (
-    <Card className="p-6">
-      <CardContent className="flex flex-col items-center pt-6 text-center">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted"
-          aria-hidden="true"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-        </div>
-        <h2 className="mt-4 text-lg font-semibold text-card-foreground">
-          {STATUS_LABELS.empty}
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Laden Sie Ihre erste Datei hoch, um den Wissensbestand zu starten.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Fehlerzustand: Alert im gleichen Muster wie die Download-Fehlermeldung,
- * mit verständlicher Meldung und Retry-Button.
- */
-function ErrorList({ onRetry }) {
-  return (
-    <Alert variant="destructive" className="bg-destructive/5">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-        />
-      </svg>
-      <AlertTitle>{STATUS_LABELS.error}</AlertTitle>
-      <AlertDescription className="flex flex-wrap items-center gap-3">
-        Bitte versuchen Sie es erneut.
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onRetry}
-          className="shrink-0"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Erneut versuchen
-        </Button>
-      </AlertDescription>
-    </Alert>
   );
 }
 
@@ -317,13 +250,26 @@ function FileCards({ files, onSelect }) {
  */
 export default function FileList({ status, files = [], onRetry, onSelect }) {
   if (status === "loading") {
-    return <LoadingList />;
+    return <ListState status="loading" loading={<LoadingList />} />;
   }
   if (status === "error") {
-    return <ErrorList onRetry={onRetry} />;
+    return (
+      <ListState
+        status="error"
+        errorTitle={STATUS_LABELS.error}
+        onRetry={onRetry}
+      />
+    );
   }
   if (status === "empty" || files.length === 0) {
-    return <EmptyList />;
+    return (
+      <ListState
+        status="empty"
+        emptyTitle={STATUS_LABELS.empty}
+        emptyDescription="Laden Sie Ihre erste Datei hoch, um den Wissensbestand zu starten."
+        emptyIcon={<EmptyFileIcon />}
+      />
+    );
   }
   return <FileCards files={files} onSelect={onSelect} />;
 }
