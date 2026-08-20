@@ -66,9 +66,11 @@ function App() {
 
   const handleFileClick = (file) => {
     // Klick-Handler der Sidebar (und der Dateiliste): setzt selectedFileId,
-    // wodurch die Hauptansicht die Detailansicht dieser Datei öffnet. Auf
-    // Mobile schließt die Auswahl zugleich das Off-Canvas-Navigationspanel.
-    setSelectedFileId(file.id);
+    // wodurch die Hauptansicht die Detailansicht dieser Datei öffnet. Ein
+    // erneuter Klick auf die bereits ausgewählte Datei setzt die Auswahl
+    // zurück (null) und führt damit zurück zur Startansicht. Auf Mobile
+    // schließt die Auswahl zugleich das Off-Canvas-Navigationspanel.
+    setSelectedFileId((current) => (current === file.id ? null : file.id));
     setSidebarOpen(false);
   };
 

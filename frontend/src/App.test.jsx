@@ -285,6 +285,45 @@ describe("App", () => {
     expect(screen.getAllByText("vertrag.pdf").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("setzt die Auswahl zurück und kehrt zur Startansicht, wenn die aktive Datei erneut geklickt wird", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([
+      { id: 1, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },
+    ]);
+    vi.spyOn(api, "fetchFile").mockResolvedValue({
+      id: 1,
+      name: "vertrag.pdf",
+      mime_type: "application/pdf",
+      size: 2048,
+      uploaded_at: "2026-08-20T10:00:00Z",
+    });
+    vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);
+
+    render(<App />);
+
+    // Erst die Datei auswählen → Detailansicht öffnet sich.
+    const sidebar = await screen.findByRole("complementary", {
+      name: "Seitenleiste",
+    });
+    const button = within(sidebar).getByRole("button", {
+      name: "Kommentare für vertrag.pdf anzeigen",
+    });
+    fireEvent.click(button);
+    expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+    expect(button.className).toContain("bg-accent");
+
+    // Erneuter Klick auf die aktive Datei setzt die Auswahl zurück.
+    fireEvent.click(button);
+
+    // Startansicht (Dateiliste) ist wieder sichtbar, keine Detailansicht.
+    expect(screen.getByText("Willkommen im Knowledge Hub")).toBeTruthy();
+    expect(
+      screen.getByRole("region", { name: "Dateiliste" })
+    ).toBeTruthy();
+    expect(screen.queryByText("Zurück zur Dateiliste")).toBeNull();
+    // In der Sidebar ist keine Datei mehr hervorgehoben.
+    expect(button.className).not.toContain("bg-accent");
+  });
+
   it("öffnet die Sidebar auf Mobile als Off-Canvas-Panel und schließt es über den X-Button", async () => {
     vi.spyOn(api, "getFiles").mockResolvedValue([]);
     render(<App />);
