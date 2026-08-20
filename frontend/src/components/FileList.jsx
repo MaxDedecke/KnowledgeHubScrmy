@@ -8,7 +8,7 @@ import {
   CardHeader,
 } from "./ui/card.jsx";
 import { Skeleton } from "./ui/skeleton.jsx";
-import { ListState } from "./ListState.jsx";
+import ListState from "./ListState.jsx";
 
 const STATUS_LABELS = {
   loading: "Wird geladen …",
