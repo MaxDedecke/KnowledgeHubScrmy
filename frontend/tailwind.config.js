@@ -35,8 +35,25 @@ export default {
         border: "rgb(var(--border) / <alpha-value>)",
         input: "rgb(var(--input) / <alpha-value>)",
         ring: "rgb(var(--ring) / <alpha-value>)",
-        success: "rgb(var(--success) / <alpha-value>)",
-        warning: "rgb(var(--warning) / <alpha-value>)",
+        success: {
+          DEFAULT: "rgb(var(--success) / <alpha-value>)",
+          foreground: "rgb(var(--primary-foreground) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "rgb(var(--warning) / <alpha-value>)",
+          foreground: "rgb(var(--foreground) / <alpha-value>)",
+        },
+      },
+      fontSize: {
+        xs: ["var(--text-xs)", { lineHeight: "1rem" }],
+        sm: ["var(--text-sm)", { lineHeight: "1.25rem" }],
+        base: ["var(--text-base)", { lineHeight: "1.5rem" }],
+        lg: ["var(--text-lg)", { lineHeight: "1.75rem" }],
+        xl: ["var(--text-xl)", { lineHeight: "1.75rem" }],
+        "2xl": ["var(--text-2xl)", { lineHeight: "2rem" }],
+      },
+      spacing: {
+        11: "2.75rem",
       },
       fontFamily: {
         sans: [
