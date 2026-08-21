@@ -1,0 +1,3 @@
+# Design-Rückblick auf Sprint 16
+
+Die Anwendung zeigt nach Sprint 16 ein sehr harmonisches und konsistentes Gesamtbild. Die Zentralisierung der Design-Tokens in der Tailwind-Konfiguration stellt sicher, dass Farben, Abstände und Typografie-Skalen durchgängig aufeinander abgestimmt sind. Zudem sorgen die vereinheitlichten Interaktionszustände für Hover, Focus-Visible und Ladeanzeigen für eine barrierefreie und intuitive Bedienung auf Desktop- und Mobilgeräten. Aus Design-Sicht sind alle Kernansichten – von der Sidebar über die Dateiliste bis zur Detailansicht – vollständig im Einklang mit dem Design-Konzept.
