@@ -264,9 +264,11 @@ export default function FileDetail({ fileId, onBack }) {
                     />
                   </svg>
                 )}
-                <span className="truncate" title="Datei herunterladen">
-                  {file.name}
-                </span>
+                <DateiName
+                  name={file.name}
+                  className="truncate"
+                  title="Datei herunterladen"
+                />
               </Button>
             </CardContent>
           </Card>
