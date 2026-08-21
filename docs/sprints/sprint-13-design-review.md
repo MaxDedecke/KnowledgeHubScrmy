@@ -1,0 +1,3 @@
+# Design-Rückblick auf Sprint 13
+
+Die Umstellung der CardDescription auf die gemeinsame DateiName-Komponente schließt die letzte Uneinheitlichkeit bei der Dateinamen-Anzeige. Damit verwendet die Anwendung durchgehend denselben Baustein für Truncation und Tooltip – die Detailsicht, die Dateiliste und die Sidebar sind nun einheitlich. Das Zusammenspiel wirkt insgesamt stimmig: Wiederkehrende Muster (Lade-, Leer-, Fehlerzustände, Buttons, Sidebar-Navigation) sind konsequent auf den gemeinsamen Shadcn/UI-Baum gehoben. Aus Design-Sicht steht keine konkrete Nacharbeit mehr an; der nächste Sprint kann sich auf fachliche Erweiterungen konzentrieren.
