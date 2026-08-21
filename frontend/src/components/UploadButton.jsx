@@ -5,8 +5,7 @@ import { Input } from "./ui/input.jsx";
 
 /**
  * Hinweistext zu den Upload-Beschränkungen: erlaubte Dateitypen und
- * Größenlimit, wie vom Backend validiert (backend/upload.js:
- * ALLOWED_MIME_TYPES, MAX_FILE_SIZE = 30 MB).
+ * Größenlimit (ALLOWED_MIME_TYPES, MAX_FILE_SIZE = 30 MB).
  */
 export const ALLOWED_UPLOAD_HINT =
   "Erlaubte Dateitypen: PNG, JPEG, PDF, TXT · max. 30 MB";
