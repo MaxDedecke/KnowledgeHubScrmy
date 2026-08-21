@@ -88,6 +88,10 @@ function App() {
       );
       setSelectedFileName("");
       setHasInitialLoaded(true);
+      // Die frisch hochgeladene Datei direkt als aktive Auswahl setzen:
+      // Dadurch öffnet sich ohne weiteren Klick die Detailansicht und die
+      // Sidebar markiert die Datei als ausgewählt.
+      setSelectedFileId(uploaded.id);
       setUploadSuccess("Datei erfolgreich hochgeladen.");
     } catch (err) {
       // Das Backend liefert bei abgelehnten Uploads eine konkrete Meldung

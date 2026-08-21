@@ -160,6 +160,55 @@ describe("App", () => {
     ).toBeNull();
   });
 
+  it("öffnet nach erfolgreichem Upload die neue Datei direkt in der Detailansicht und markiert sie in der Sidebar", async () => {
+    vi.spyOn(api, "getFiles").mockResolvedValue([]);
+    const hochgeladen = fileMeta({
+      id: 4,
+      name: "neu.txt",
+      size: 200,
+      created_at: "2026-08-20T11:30:00Z",
+    });
+    const uploadMock = vi.spyOn(api, "uploadFile").mockResolvedValue(hochgeladen);
+    vi.spyOn(api, "fetchFile").mockResolvedValue({
+      id: 4,
+      name: "neu.txt",
+      mime_type: "text/plain",
+      size: 200,
+      uploaded_at: "2026-08-20T11:30:00Z",
+    });
+    vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Noch keine Dateien vorhanden" })
+      ).toBeTruthy();
+    });
+
+    const fileInput = document.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["Inhalt"], "neu.txt")] },
+    });
+
+    // Ohne weiteren Klick öffnet sich direkt die Detailansicht der
+    // hochgeladenen Datei (Kommentarliste sichtbar).
+    await waitFor(() => {
+      expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Kommentare" })).toBeTruthy();
+    });
+    expect(uploadMock).toHaveBeenCalledTimes(1);
+
+    // Die Detailansicht lädt genau die frisch hochgeladene Datei.
+    expect(api.fetchFile).toHaveBeenCalledWith(4);
+
+    // Die Sidebar markiert die neue Datei farblich als ausgewählt.
+    const sidebar = screen.getByRole("complementary", { name: "Seitenleiste" });
+    const selectedButton = within(sidebar).getByRole("button", {
+      name: "Kommentare für neu.txt anzeigen",
+    });
+    expect(selectedButton.className).toContain("bg-accent");
+  });
+
   it("zeigt bei fehlgeschlagenem Upload die konkrete Backend-Fehlermeldung im Alert", async () => {
     const { fileInput } = await renderUploadTest({
       upload: () =>
