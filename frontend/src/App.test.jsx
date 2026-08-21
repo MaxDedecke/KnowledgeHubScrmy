@@ -281,7 +281,85 @@ describe("App", () => {
     expect(screen.getAllByText("laufend.txt").length).toBeGreaterThan(0);
   });
 
-  it("zeigt nach erfolgreichem Upload einen kurzen Erfolgs-Hinweis", async () => {
+  it("durchspielt den Upload-Erfolgsablauf: deaktivierter Button + Spinner, automatisch geöffnete Datei, ausgeblendeter Erfolgs-Alert", async () => {
+    let finishUpload;
+    const pendingUpload = new Promise((resolve) => {
+      finishUpload = resolve;
+    });
+    const hochgeladen = fileMeta({ id: 8, name: "ablauf.txt", size: 300 });
+    const { fileInput } = await renderUploadTest({
+      upload: () => pendingUpload,
+    });
+
+    // 1. Datei auswählen und Upload auslösen.
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["Inhalt"], "ablauf.txt")] },
+    });
+
+    // 2. Während der Übertragung: Button deaktiviert und zeigt einen Spinner.
+    await waitFor(() => {
+      const button = screen.getByRole("button", { name: /Wird hochgeladen/ });
+      expect(button.disabled).toBe(true);
+      expect(button.querySelector("svg.animate-spin")).toBeTruthy();
+    });
+
+    // 3. Erfolgreiche Antwort: Ladezustand endet, die neue Datei wird
+    // automatisch ausgewählt und geöffnet, der Erfolgs-Alert ist ausgeblendet.
+    finishUpload(hochgeladen);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /Wird hochgeladen/ })
+      ).toBeNull();
+      expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+    });
+    // Der Button ist wieder aktiv (Ladezustand freigegeben).
+    expect(
+      screen.getByRole("button", { name: "Datei auswählen" }).disabled
+    ).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Upload erfolgreich")).toBeNull();
+    expect(screen.queryByText("Datei erfolgreich hochgeladen.")).toBeNull();
+  });
+
+  it("gibt im Upload-Fehlerfall den Ladezustand frei und zeigt einen Fehler-Alert", async () => {
+    let rejectUpload;
+    const pendingUpload = new Promise((_, reject) => {
+      rejectUpload = reject;
+    });
+    const { fileInput } = await renderUploadTest({
+      upload: () => pendingUpload,
+    });
+
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["x"], "kaputt.txt")] },
+    });
+
+    // 1. Während der Übertragung ist der Button deaktiviert.
+    await waitFor(() => {
+      const button = screen.getByRole("button", { name: /Wird hochgeladen/ });
+      expect(button.disabled).toBe(true);
+    });
+
+    // 2. Fehlerantwort: Ladezustand wird freigegeben ...
+    rejectUpload(new Error("Datei ist zu groß. Maximale Größe ist 30 MB."));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /Wird hochgeladen/ })
+      ).toBeNull();
+    });
+    // ... der Button ist wieder aktiv ...
+    expect(
+      screen.getByRole("button", { name: "Datei auswählen" }).disabled
+    ).toBe(false);
+    // ... und ein Fehler-Alert erscheint mit der konkreten Meldung.
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("Upload fehlgeschlagen")).toBeTruthy();
+    expect(
+      screen.getByText("Datei ist zu groß. Maximale Größe ist 30 MB.")
+    ).toBeTruthy();
+  });
+
+  it("blendet den Erfolgs-Alert nach erfolgreichem Upload aus, sobald die neue Datei geöffnet ist", async () => {
     const { fileInput } = await renderUploadTest({
       upload: () => Promise.resolve(fileMeta({ id: 7, name: "erfolg.txt" })),
     });
@@ -290,11 +368,14 @@ describe("App", () => {
       target: { files: [new File(["x"], "erfolg.txt")] },
     });
 
+    // Die neue Datei ist automatisch ausgewählt und die Detailansicht offen.
     await waitFor(() => {
-      expect(screen.getByText("Upload erfolgreich")).toBeTruthy();
+      expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
     });
-    expect(screen.getByText("Datei erfolgreich hochgeladen.")).toBeTruthy();
-    expect(screen.getByRole("alert")).toBeTruthy();
+    // Nach dem Öffnen der neuen Datei ist der Erfolgs-Alert ausgeblendet.
+    expect(screen.queryByText("Upload erfolgreich")).toBeNull();
+    expect(screen.queryByText("Datei erfolgreich hochgeladen.")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("öffnet per Klick in der Sidebar die Detailansicht der Datei und zeigt die Auswahl in der Sidebar hervor", async () => {
