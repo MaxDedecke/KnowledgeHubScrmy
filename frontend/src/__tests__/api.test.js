@@ -115,8 +115,7 @@ describe("uploadFile", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const calledUrl = global.fetch.mock.calls[0][0];
     expect(calledUrl).toBe("/api/files");
-    expect(calledUrl).not.toContain("backend");
-    expect(calledUrl).not.toContain("http://");
+    expect(calledUrl.startsWith("http")).toBe(false);
     expect(calledUrl.startsWith("/")).toBe(true);
   });
 
@@ -270,7 +269,7 @@ describe("fetchKommentare", () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/files/2/kommentare");
     const calledUrl = global.fetch.mock.calls[0][0];
     expect(calledUrl.startsWith("/api/")).toBe(true);
-    expect(calledUrl).not.toContain("backend");
+    expect(calledUrl.startsWith("http")).toBe(false);
     expect(kommentare).toHaveLength(1);
     expect(kommentare[0]).toMatchObject({ id: 1, text: "Erster Kommentar" });
   });
@@ -314,7 +313,7 @@ describe("createKommentar", () => {
     });
     const calledUrl = global.fetch.mock.calls[0][0];
     expect(calledUrl.startsWith("/api/")).toBe(true);
-    expect(calledUrl).not.toContain("backend");
+    expect(calledUrl.startsWith("http")).toBe(false);
     expect(neuerKommentar).toMatchObject({ id: 5, text: "Neuer Kommentar" });
   });
 

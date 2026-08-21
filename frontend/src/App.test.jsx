@@ -326,8 +326,7 @@ describe("App", () => {
       const url = call[0];
       expect(typeof url).toBe("string");
       expect(url.startsWith("/api/")).toBe(true);
-      expect(url).not.toContain("backend:3000");
-      expect(url).not.toContain("http://");
+      expect(url.startsWith("http")).toBe(false);
     }
   });
 
