@@ -45,6 +45,19 @@ describe("FileDetail", () => {
     });
   });
 
+  it("hat korrekte Barrierefreiheits- und Interaktionsklassen auf dem Zurück-Button", async () => {
+    vi.spyOn(api, "fetchFile").mockResolvedValue(DATEI);
+    vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);
+
+    render(<FileDetail fileId={DATEI.id} onBack={() => {}} />);
+
+    const backButton = await screen.findByRole("button", {
+      name: "Zurück zur Dateiliste",
+    });
+    expect(backButton.className).toContain("focus-visible:ring-2");
+    expect(backButton.className).toContain("focus-visible:ring-ring");
+  });
+
   it("zeigt bei einem fehlgeschlagenen Download eine Fehlermeldung", async () => {
     vi.spyOn(api, "fetchFile").mockResolvedValue(DATEI);
     vi.spyOn(api, "fetchKommentare").mockResolvedValue([]);

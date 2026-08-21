@@ -157,7 +157,7 @@ function FileCards({ files, onSelect }) {
                       variant="ghost"
                       onClick={() => onSelect?.(file)}
                       aria-label={`Kommentare für ${file.name} anzeigen`}
-                      className="h-auto rounded-md p-0 text-left font-semibold text-card-foreground hover:bg-transparent hover:text-primary"
+                      className="h-auto rounded-md p-0 text-left font-semibold text-card-foreground hover:bg-transparent hover:text-primary focus-visible:ring-offset-2"
                     >
                       <DateiName
                         name={file.name}
