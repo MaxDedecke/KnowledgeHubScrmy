@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { downloadFile, getFiles, uploadFile } from "../api.js";
+import {
+  createKommentar,
+  downloadFile,
+  fetchFile,
+  fetchKommentare,
+  getFiles,
+  uploadFile,
+} from "../api.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -18,7 +25,7 @@ describe("getFiles", () => {
 
     const files = await getFiles();
 
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files");
+    expect(global.fetch).toHaveBeenCalledWith("/api/files");
     expect(files).toEqual([
       { id: 3, name: "vertrag.pdf", size: 2048, created_at: "2026-08-20T10:00:00Z" },
       { id: 1, name: "notizen.txt", size: 100, created_at: "2026-08-19T09:30:00Z" },
@@ -55,6 +62,37 @@ describe("getFiles", () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
 
     await expect(getFiles()).rejects.toThrow(TypeError);
+  });
+});
+
+describe("fetchFile", () => {
+  it("ruft GET /api/files/:id auf und liefert Metadaten der Datei", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 4,
+        name: "test.pdf",
+        mime_type: "application/pdf",
+        size: 1024,
+        uploaded_at: "2026-08-20T10:00:00Z",
+      }),
+    });
+
+    const file = await fetchFile(4);
+
+    expect(global.fetch).toHaveBeenCalledWith("/api/files/4");
+    expect(file).toMatchObject({ id: 4, name: "test.pdf" });
+  });
+
+  it("wirft bei einem Fehler den Fehler", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+    });
+
+    await expect(fetchFile(99)).rejects.toThrow(
+      "Datei konnte nicht geladen werden (HTTP 404)"
+    );
   });
 });
 
@@ -102,7 +140,7 @@ describe("uploadFile", () => {
     const file = new File(["Inhalt"], "notiz.txt", { type: "text/plain" });
     const result = await uploadFile(file);
 
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files", {
+    expect(global.fetch).toHaveBeenCalledWith("/api/files", {
       method: "POST",
       body: expect.any(FormData),
     });
@@ -136,7 +174,7 @@ describe("downloadFile", () => {
 
     await downloadFile(7);
 
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files/7/download");
+    expect(global.fetch).toHaveBeenCalledWith("/api/files/7/download");
     expect(clickedLink).not.toBeNull();
     expect(clickedLink.href).toBe("blob:mock");
     expect(clickedLink.download).toBe("vertrag.pdf");
@@ -156,7 +194,7 @@ describe("downloadFile", () => {
     await expect(downloadFile(99)).rejects.toThrow(
       "Datei konnte nicht heruntergeladen werden (HTTP 404)"
     );
-    expect(global.fetch).toHaveBeenCalledWith("http://backend:3000/api/files/99/download");
+    expect(global.fetch).toHaveBeenCalledWith("/api/files/99/download");
     expect(document.querySelector('a[download]')).toBeNull();
   });
 
@@ -170,5 +208,67 @@ describe("downloadFile", () => {
       /Datei konnte nicht heruntergeladen werden/
     );
     expect(document.querySelector('a[download]')).toBeNull();
+  });
+});
+
+describe("fetchKommentare", () => {
+  it("ruft GET /api/files/:id/kommentare auf und liefert Kommentare", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: 1, file_id: 2, text: "Erster Kommentar", created_at: "2026-08-20T11:00:00Z" },
+      ],
+    });
+
+    const kommentare = await fetchKommentare(2);
+
+    expect(global.fetch).toHaveBeenCalledWith("/api/files/2/kommentare");
+    expect(kommentare).toHaveLength(1);
+    expect(kommentare[0]).toMatchObject({ id: 1, text: "Erster Kommentar" });
+  });
+
+  it("wirft bei einem Fehler den Fehler", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    await expect(fetchKommentare(2)).rejects.toThrow(
+      "Kommentare konnten nicht geladen werden (HTTP 500)"
+    );
+  });
+});
+
+describe("createKommentar", () => {
+  it("sendet POST /api/files/:id/kommentare und liefert neuen Kommentar", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 5,
+        file_id: 2,
+        text: "Neuer Kommentar",
+        created_at: "2026-08-20T12:00:00Z",
+      }),
+    });
+
+    const neuerKommentar = await createKommentar(2, "Neuer Kommentar");
+
+    expect(global.fetch).toHaveBeenCalledWith("/api/files/2/kommentare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "Neuer Kommentar" }),
+    });
+    expect(neuerKommentar).toMatchObject({ id: 5, text: "Neuer Kommentar" });
+  });
+
+  it("wirft bei einem Fehler den Fehler", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+    });
+
+    await expect(createKommentar(2, "Ungültig")).rejects.toThrow(
+      "Kommentar konnte nicht gespeichert werden (HTTP 400)"
+    );
   });
 });

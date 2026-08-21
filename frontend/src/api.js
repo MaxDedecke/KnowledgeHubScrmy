@@ -1,7 +1,7 @@
-// Basis-URL des Backends: Standard ist der Compose-Servicename im internen
-// Docker-Netz. Für lokale Entwicklung ohne Compose kann per
-// VITE_API_BASE_URL überschrieben werden.
-const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || "http://backend:3000";
+// Basis-URL der API: Standardmäßig relative Pfade, damit Browser-Anfragen
+// über den Vite-Proxy / Reverse-Proxy an das Backend weitergeleitet werden.
+// Für lokale Entwicklung/Tests kann per VITE_API_BASE_URL optional eine Basis-URL gesetzt werden.
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || "";
 
 /**
  * Lädt die Liste aller hochgeladenen Dateien vom Backend (GET /api/files).
