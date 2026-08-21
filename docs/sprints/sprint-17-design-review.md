@@ -1,0 +1,3 @@
+# Design-Rückblick auf Sprint 17
+
+Die Umstellung auf relative API-Pfade und den Vite-Proxy behebt das Konnektivitätsproblem im Browser sauber, ohne das visuelle Erscheinungsbild zu beeinträchtigen. Die Anwendung präsentiert sich mit der festen Sidebar, den shadcn/ui-Komponenten, konsistenten Lade- und Fehlerzuständen sowie einheitlichen Interaktions-Feedbacks als stimmiges und vorzeigbares Gesamtbild. Auch die Responsive-Darstellung mit mobiler Navigation und die Typografie- und Spacing-Skalen greifen nahtlos ineinander. Aus Design-Sicht sind alle Kernmuster und Akzeptanzkriterien harmonisch umgesetzt, sodass keine weiteren UI-Nacharbeiten erforderlich sind.
