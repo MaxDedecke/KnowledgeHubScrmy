@@ -97,6 +97,29 @@ describe("fetchFile", () => {
 });
 
 describe("uploadFile", () => {
+  it("sendet den Upload als POST an den relativen Pfad /api/files (ohne Docker-Servicename)", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 1,
+        name: "test.txt",
+        size: 4,
+        created_at: "2026-08-20T12:00:00Z",
+      }),
+    });
+
+    const file = new File(["test"], "test.txt", { type: "text/plain" });
+    await uploadFile(file);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const calledUrl = global.fetch.mock.calls[0][0];
+    expect(calledUrl).toBe("/api/files");
+    expect(calledUrl).not.toContain("backend");
+    expect(calledUrl).not.toContain("http://");
+    expect(calledUrl.startsWith("/")).toBe(true);
+  });
+
   it("leitet die konkrete Fehlermeldung des Backends bei abgelehntem Upload weiter", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -145,6 +168,28 @@ describe("uploadFile", () => {
       body: expect.any(FormData),
     });
     expect(result).toMatchObject({ id: 3, name: "notiz.txt" });
+  });
+
+  it("fällt bei HTTP-Fehlern ohne JSON-Body auf eine verständliche Fehlermeldung mit Statuscode zurück", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new Error("Invalid JSON");
+      },
+    });
+
+    await expect(
+      uploadFile(new File(["x"], "datei.pdf"))
+    ).rejects.toThrow("Datei konnte nicht hochgeladen werden (HTTP 502)");
+  });
+
+  it("lehnt das Promise bei Netzwerkabbrüchen (z. B. Failed to fetch) ab", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(
+      uploadFile(new File(["x"], "datei.pdf"))
+    ).rejects.toThrow("Failed to fetch");
   });
 });
 
@@ -223,8 +268,17 @@ describe("fetchKommentare", () => {
     const kommentare = await fetchKommentare(2);
 
     expect(global.fetch).toHaveBeenCalledWith("/api/files/2/kommentare");
+    const calledUrl = global.fetch.mock.calls[0][0];
+    expect(calledUrl.startsWith("/api/")).toBe(true);
+    expect(calledUrl).not.toContain("backend");
     expect(kommentare).toHaveLength(1);
     expect(kommentare[0]).toMatchObject({ id: 1, text: "Erster Kommentar" });
+  });
+
+  it("lehnt das Promise bei Netzwerkfehler ab", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(fetchKommentare(2)).rejects.toThrow("Failed to fetch");
   });
 
   it("wirft bei einem Fehler den Fehler", async () => {
@@ -240,7 +294,7 @@ describe("fetchKommentare", () => {
 });
 
 describe("createKommentar", () => {
-  it("sendet POST /api/files/:id/kommentare und liefert neuen Kommentar", async () => {
+  it("sendet POST /api/files/:id/kommentare über relativen Pfad und liefert neuen Kommentar", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -258,7 +312,16 @@ describe("createKommentar", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: "Neuer Kommentar" }),
     });
+    const calledUrl = global.fetch.mock.calls[0][0];
+    expect(calledUrl.startsWith("/api/")).toBe(true);
+    expect(calledUrl).not.toContain("backend");
     expect(neuerKommentar).toMatchObject({ id: 5, text: "Neuer Kommentar" });
+  });
+
+  it("lehnt das Promise bei Netzwerkfehler ab", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(createKommentar(2, "Neuer Text")).rejects.toThrow("Failed to fetch");
   });
 
   it("wirft bei einem Fehler den Fehler", async () => {

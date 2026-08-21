@@ -237,6 +237,100 @@ describe("App", () => {
     ).toBeNull();
   });
 
+  it("behandelt Netzwerkabbrüche (Failed to fetch) beim Upload mit einer verständlichen Fehlermeldung in der UI", async () => {
+    const { fileInput } = await renderUploadTest({
+      upload: () => Promise.reject(new TypeError("Failed to fetch")),
+    });
+
+    fireEvent.change(fileInput, {
+      target: { files: [new File(["x"], "dokument.pdf")] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeTruthy();
+    });
+    expect(screen.getByText("Upload fehlgeschlagen")).toBeTruthy();
+    expect(screen.getByText("Failed to fetch")).toBeTruthy();
+  });
+
+  it("prüft die End-to-End-Kommunikation der API-Aufrufe mit relativen Pfaden ohne Docker-Servicenamen", async () => {
+    vi.spyOn(api, "getFiles").mockClear();
+    vi.restoreAllMocks();
+
+    // Spione direkt auf fetch setzen, um zu prüfen, dass keine Servicenamen in URLs auftauchen
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url === "/api/files") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [
+            {
+              id: 10,
+              name: "vertrag.pdf",
+              size: 1024,
+              created_at: "2026-08-20T10:00:00Z",
+            },
+          ],
+        });
+      }
+      if (url === "/api/files/10") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 10,
+            name: "vertrag.pdf",
+            mime_type: "application/pdf",
+            size: 1024,
+            uploaded_at: "2026-08-20T10:00:00Z",
+          }),
+        });
+      }
+      if (url === "/api/files/10/kommentare") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [],
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+    });
+
+    render(<App />);
+
+    // Dateiliste lädt über GET /api/files
+    await waitFor(() => {
+      expect(screen.getAllByText("vertrag.pdf").length).toBeGreaterThan(0);
+    });
+
+    // Klick auf Datei öffnet Detailansicht (GET /api/files/10 und GET /api/files/10/kommentare)
+    const sidebar = await screen.findByRole("complementary", {
+      name: "Seitenleiste",
+    });
+    fireEvent.click(
+      within(sidebar).getByRole("button", {
+        name: "Kommentare für vertrag.pdf anzeigen",
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Zurück zur Dateiliste")).toBeTruthy();
+    });
+
+    // Alle ausgeführten fetch-Aufrufe prüfen
+    for (const call of global.fetch.mock.calls) {
+      const url = call[0];
+      expect(typeof url).toBe("string");
+      expect(url.startsWith("/api/")).toBe(true);
+      expect(url).not.toContain("backend:3000");
+      expect(url).not.toContain("http://");
+    }
+  });
+
   it("zeigt unter dem Upload-Button den Hinweis auf erlaubte Dateitypen und die 30-MB-Grenze", async () => {
     vi.spyOn(api, "getFiles").mockResolvedValue([]);
     render(<App />);
