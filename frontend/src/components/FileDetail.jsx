@@ -276,8 +276,13 @@ export default function FileDetail({ fileId, onBack }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Kommentare</CardTitle>
-              <CardDescription className="truncate">
-                zu {file.name}
+              <CardDescription>
+                zu{" "}
+                <DateiName
+                  name={file.name}
+                  withTooltip
+                  className="truncate"
+                />
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

@@ -62,7 +62,14 @@ describe("KommentarListe (in App integriert)", () => {
     });
     expect(api.fetchKommentare).toHaveBeenCalledWith(DATEI.id);
     // Kommentar ist klar der Datei zugeordnet (Karte nennt die Datei)
-    expect(screen.getByText(`zu ${DATEI.name}`)).toBeTruthy();
+    expect(
+      screen.getByText(
+        (content, element) =>
+          element?.tagName === "P" &&
+          element.textContent.includes("zu") &&
+          element.textContent.includes(DATEI.name)
+      )
+    ).toBeTruthy();
   });
 
   it("zeigt bei einer Datei ohne Kommentare den Leerzustand", async () => {
