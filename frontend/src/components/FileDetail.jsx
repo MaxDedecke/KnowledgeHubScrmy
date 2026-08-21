@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "./ui/card.jsx";
 import { Skeleton } from "./ui/skeleton.jsx";
+import DateiName from "./DateiName.jsx";
 
 export const DETAIL_STATUS = {
   loading: "loading",
@@ -191,8 +192,8 @@ export default function FileDetail({ fileId, onBack }) {
         <>
           <Card>
             <CardHeader>
-              <CardTitle className="truncate text-2xl" title={file.name}>
-                {file.name}
+              <CardTitle className="text-2xl">
+                <DateiName name={file.name} withTooltip className="block truncate" />
               </CardTitle>
               {meta.length > 0 && <CardDescription>{meta.join(" · ")}</CardDescription>}
             </CardHeader>

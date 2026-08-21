@@ -9,6 +9,7 @@ import {
 } from "./ui/card.jsx";
 import { Skeleton } from "./ui/skeleton.jsx";
 import ListState from "./ListState.jsx";
+import DateiName from "./DateiName.jsx";
 
 const STATUS_LABELS = {
   loading: "Wird geladen …",
@@ -158,9 +159,11 @@ function FileCards({ files, onSelect }) {
                       aria-label={`Kommentare für ${file.name} anzeigen`}
                       className="h-auto rounded-md p-0 text-left font-semibold text-card-foreground hover:bg-transparent hover:text-primary"
                     >
-                      <span className="truncate" title={file.name}>
-                        {file.name}
-                      </span>
+                      <DateiName
+                        name={file.name}
+                        withTooltip
+                        className="truncate text-left"
+                      />
                     </Button>
                     {meta.length > 0 && (
                       <CardDescription className="mt-1">

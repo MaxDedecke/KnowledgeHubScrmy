@@ -2,6 +2,7 @@ import { Button } from "./ui/button.jsx";
 import { Card, CardContent } from "./ui/card.jsx";
 import { formatDate } from "./FileList.jsx";
 import ListState from "./ListState.jsx";
+import DateiName from "./DateiName.jsx";
 
 export const SIDEBAR_STATUS = {
   loading: "loading",
@@ -63,9 +64,11 @@ function SidebarList({ files, selectedFileId, onSelect }) {
             >
               <DocumentIcon />
               <span className="min-w-0 flex-1">
-                <span title={file.name} className="block truncate text-sm font-semibold">
-                  {file.name}
-                </span>
+                <DateiName
+                  name={file.name}
+                  withTooltip
+                  className="block truncate text-sm font-semibold"
+                />
                 {datum && (
                   <span className="block truncate text-xs text-muted-foreground">
                     {datum}
